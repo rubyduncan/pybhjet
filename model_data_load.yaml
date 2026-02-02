@@ -1,0 +1,186 @@
+data: # This will be changed for each new source/dataset loaded: 
+  flux_data_category: 
+    kind: combine_dataframes
+    directory: "/path/to/files"
+    extension: ".dat"
+    columns: [x, y, yerr]
+
+  ogip_data_category:
+    kind: ogip
+    observation: "/path/to/files"
+    arf_file:     "/path/to/files"
+    response:     "/path/to/files"
+    background:   "/path/to/files"
+    energy_range: "0.9-8."
+    rebin_on_source: 25
+
+#for each dataset loaded/that needs an individual model: 
+sources:
+  src_radio:
+    ra: 0.0 
+    dec: 0.0
+    spectrum: radio_model #this is going to align with the model section, under spectra. 
+    datasets: [rad]
+
+  src_iruv: 
+    ra: 0.0
+    dec: 0.0
+    spectrum: iruv_model
+    datasets: [ir, uv]
+
+  src_xray:
+    ra: 0.0
+    dec: 0.0
+    spectrum: xray_model
+    datasets: [ogip_data_category]
+
+model:
+  components: #this will be changed for each source, depending on model definition 
+    jet: BHJetModel
+    gal_ext: TbAbs
+    intr_ext: TbAbs
+    dust_ext: ZDust
+
+  spectra: #this is used for defining the model as applied to each source
+    radio_model: jet
+    iruv_model: dust_ext * jet
+    xray_model: gal_ext * intr_ext * jet
+
+  sed_components: #this is badly repetitive, but used for plotting, will be modified. 
+    jet: jet
+    dust_times_jet: dust_ext * jet
+    abs_times_jet: gal_ext * intr_ext * jet
+
+parameters:
+  jet: 
+    Mbh:   {value: 6.6e8, free: false}
+    theta: {value: 66.0,  free: false}
+    dist:  {value: 9080.0, free: false}
+    redsh: {value: 0.003633, free: false}
+
+    jetrat:
+      value: 0.0005
+      free: true
+      bounds: [2e-4, 6e-4]
+      prior: {type: log_uniform, min: 2e-4, max: 6e-4}
+      # bounds: [0.0002, 0.0006]
+      # prior: {type: uniform, min: }
+  
+    r_0:
+      value: 5.9
+      free: true
+      bounds: [2.0, 10.0]
+      prior: {type: uniform, min: 2.0, max: 10.0}
+
+    z_diss:
+      value: 80.0
+      free: true
+      bounds: [40.0, 110]
+      prior:
+        type: Truncated_gaussian
+        mu: 100
+        sigma: 15
+        lower_bound: 40
+        upper_bound: 110
+      #  prior: {type: uniform, min: 40.0, max: 90.0}
+
+    z_acc:
+      value: 80.0
+      free: true
+      bounds: [40.0, 110]
+      prior:
+        type: Truncated_gaussian
+        mu: 100
+        sigma: 15
+        lower_bound: 40
+        upper_bound: 110
+      # prior: {type: uniform,  min: 40.0, max: 90.0}
+
+    z_max:  {value: 10000000.0, free: false}
+
+    t_e:
+      value: 720
+      free: true
+      bounds: [690.0, 800]
+      prior: {type: uniform, min: 690.0, max: 800.0}
+
+    f_nth:  {value: 0.1,  free: false}
+
+    f_pl:
+      value: 2
+      free: true
+      prior:
+        type: Truncated_gaussian
+        mu: 2
+        sigma: 1
+        lower_bound: 1
+        upper_bound: 10
+      # prior: {type: uniform, min: 0, max: 10}
+
+    pspec:
+      value: 1.7
+      free: true
+      bounds: [1.5, 2.3]
+      prior:
+        type: Truncated_gaussian
+        mu: 2.2
+        sigma: 0.15
+        lower_bound: 1.5
+        upper_bound: 2.3
+
+    f_heat:
+      value: 2
+      free: true
+      bounds: [1, 10]
+      prior:
+        type: Truncated_gaussian
+        mu: 3
+        sigma: 2.5
+        lower_bound: 1
+        upper_bound: 10
+      # prior: {type: uniform, min: 7, max: 10}
+
+    f_beta: {value: 0.1,  free: false}
+
+    f_sc:
+      value: 7e-8
+      free: true
+      bounds: [2e-8, 2e-7]
+      prior: {type: log_uniform, min: 2e-8, max: 2e-7}
+
+    p_beta:  {value: 0.028, free: false, bounds: [0.001, 0.04]}
+    sig_acc: {value: 0.01, free: false, bounds: [0.01, 1.0]}
+    l_disk:  {value: 1.0e-5, free: false, bounds: [1.0e-7, 1.0]}
+
+    r_in:    {value: 600.0, free: false, bounds: [10.0, 3000.0]}
+    r_out:   {value: 500.0, free: false, bounds: [500.0, 1500.0]}
+
+    compar1: {value: 1500.0, free: false, bounds: [1000.0, 3000.0]}
+    compar2: {value: 5.0e40, free: false, bounds: [1.0e35, 1.0e43]}
+    compar3: {value: 1.0e-8, free: false, bounds: [1.0e-10, 0.1]}
+
+    compsw:  {value: 0.0, free: false, bounds: [0.0, 3.0]}
+    velsw:   {value: 5.0, free: false, bounds: [0.0, 25.0]}
+    infosw:  {value: 1.0, free: false}
+    EBLsw:   {value: 0.0, free: false}
+
+  gal_ext:        # Galactic absorption
+    NH:       {value: 0.00367, free: false, bounds: [1e-4, 1]}
+    redshift: {value: 0.0, free: false}
+
+  intr_ext:       # Intrinsic absorption at source redshift
+    NH:
+      value: 0.14
+      free: false
+      bounds: [0.01, 0.9]
+      prior: {type: log_uniform, min: 0.01, max: 0.9}
+    redshift: {value: 0.003633, free: false}
+
+  dust_ext:       # Reddening at source redshift
+    e_bmv:
+        value: 0.15 #this is for the value Av
+        free: false
+        bounds: [0.05, 0.2]
+        prior: {type: uniform, min: 0.05, max: 0.2}
+    rv:       {value: 3.08, free: false} #this is to select which extinction law you want to follow 
+    redshift: {value: 0.003633, free: false}

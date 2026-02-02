@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/pybhjet.dir/Kariba/BBody.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/BBody.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Bknpower.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Bknpower.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Compton.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Compton.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Cyclosyn.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Cyclosyn.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Kappa.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Kappa.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Mixed.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Mixed.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Particles.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Particles.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Powerlaw.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Powerlaw.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Radiation.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Radiation.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/ShSDisk.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/ShSDisk.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/Kariba/Thermal.cpp.o"
+  "CMakeFiles/pybhjet.dir/Kariba/Thermal.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/bhjet_class.cpp.o"
+  "CMakeFiles/pybhjet.dir/bhjet_class.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/jetmain.cpp.o"
+  "CMakeFiles/pybhjet.dir/jetmain.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/jetpars.cpp.o"
+  "CMakeFiles/pybhjet.dir/jetpars.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/python_interface.cpp.o"
+  "CMakeFiles/pybhjet.dir/python_interface.cpp.o.d"
+  "CMakeFiles/pybhjet.dir/utils.cpp.o"
+  "CMakeFiles/pybhjet.dir/utils.cpp.o.d"
+  "pybhjet.cpython-39-darwin.so"
+  "pybhjet.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/pybhjet.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

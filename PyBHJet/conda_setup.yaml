@@ -1,0 +1,18 @@
+name: pybhjet
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cmake
+  - make
+  - gsl
+  - {{ compiler('c') }}  #picks Clang on macOS, GCC on Linux
+  - {{ compiler('cxx') }} 
+  - jupyterlab
+  - python=3.8
+  - numpy
+  - pandas
+  - matplotlib
+  - pybind11
+  - pip
+  - ipympl
