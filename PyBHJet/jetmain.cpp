@@ -303,6 +303,7 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
                 zone.eltemp = max(tshift*t_e*pow(log10(z_diss)/log10(z),f_pl),1.);
             }					
             Mixed acc_lep(nel);
+            acc_lep.set_cutoff_type(bhjet.get_cutoff_type());
             acc_lep.set_temp_kev(zone.eltemp);
             acc_lep.set_pspec(pspec);
             acc_lep.set_plfrac(zone.nth_frac);
@@ -344,6 +345,7 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
             double pbrk = dummy_elec.av_p();
             
             Bknpower acc_lep(nel);
+            acc_lep.set_cutoff_type(bhjet.get_cutoff_type());
             acc_lep.set_pspec1(-2.);
             acc_lep.set_pspec2(pspec);
                         
@@ -383,6 +385,7 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
             double pmin = dummy_elec.av_p();
             
             Powerlaw acc_lep(nel);
+            acc_lep.set_cutoff_type(bhjet.get_cutoff_type());
             acc_lep.set_pspec(pspec);
                         
             if (f_sc<10.){

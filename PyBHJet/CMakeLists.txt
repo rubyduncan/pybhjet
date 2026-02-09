@@ -8,19 +8,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Specify CMAKE_PREFIX_PATH for pybind11 
  #shoudl find the CMAKE_PREFIX_PATH for pybind11, can set it directly if it is not found. 
 
-set(Python3_EXECUTABLE "pybhjet_venv/bin/python")
+set(Python3_EXECUTABLE "${CMAKE_SOURCE_DIR}/pybhjet_venv/bin/python")
 
-# set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};/path/to/pybind11/share/cmake/pybind11")
-set(pybind11_DIR "pybhjet_venv/lib/python3.14/site-packages/pybind11/share/cmake/pybind11")
+## forcing it to be found, but only looking in the venv (so not great)
+execute_process( 
+  COMMAND ${Python3_EXECUTABLE} -m pybind11 --cmakedir
+  OUTPUT_VARIABLE pybind11_dir
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
-find_package(pybind11 REQUIRED)
-
+set(pybind11_DIR "${pybind11_dir}")
+find_package(pybind11 CONFIG REQUIRED)
 find_package(GSL REQUIRED)
-
-# environment variable for Python paths
-if(NOT DEFINED ENV{PYTHONPATH})
-    message(WARNING "PYTHONPATH environment variable is not set. Ensure pybind11 is accessible.")
-endif()
 
 # Add Kariba source files
 set(KARIBA_SOURCES
@@ -51,13 +50,12 @@ set(ALL_SOURCES ${PYBHJET_SOURCES} ${KARIBA_SOURCES})
 pybind11_add_module(pybhjet ${ALL_SOURCES})
 
 # Link libraries
-target_link_libraries(pybhjet PRIVATE GSL::gsl GSL::gslcblas m pybind11::module)
+target_link_libraries(pybhjet PRIVATE GSL::gsl GSL::gslcblas m)
 
 # Include directories
 target_include_directories(pybhjet PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/../Kariba
-    $ENV{PYBIND11_INCLUDE_DIR}
     /opt/local/include
 )
 

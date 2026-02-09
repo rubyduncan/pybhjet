@@ -54,13 +54,24 @@ void Bknpower::set_p(double min,double brk,double gmax){
 }
 
 //Method to set differential electron number density from known pspec, normalization, and momentum array
+
 void Bknpower::set_ndens(){
     for (int i=0;i<size;i++){
-        ndens[i] = norm*pow(p[i]/pbrk,-pspec1)/(1.+pow(p[i]/pbrk,-pspec1+pspec2))*exp(-p[i]/pmax);
-    }
+        double x = p[i] / pmax;
+        double C = Particles::cutoff_factor(x, cutoff_type);
+        ndens [i] = norm*pow(p[i]/pbrk,-pspec1)/(1.+pow(p[i]/pbrk,-pspec1+pspec2))*C;
+        }
     initialize_gdens();
-    gdens_differentiate();		
+    gdens_differentiate();	
 }
+
+// void Bknpower::set_ndens(){
+//     for (int i=0;i<size;i++){
+//         ndens[i] = norm*pow(p[i]/pbrk,-pspec1)/(1.+pow(p[i]/pbrk,-pspec1+pspec2))*exp(-p[i]/pmax);
+//     }
+//     initialize_gdens();
+//     gdens_differentiate();		
+// }
 
 //methods to set the slopes, break and normalization
 void Bknpower::set_pspec1(double s1){
@@ -76,6 +87,20 @@ void Bknpower::set_brk(double brk){
 }
 
 //Methods to calculate the normalization of the function
+// double norm_bkn_int(double x,void *p){	
+//     struct bkn_params * params = (struct bkn_params*)p; 	 
+
+//     double s1 = (params->s1);
+//     double s2 = (params->s2);
+//     double brk = (params->brk);
+//     double max = (params->max);
+//     double m = (params->m);	
+
+//     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
+
+//     return pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*exp(-mom_int/max);
+// }
+
 double norm_bkn_int(double x,void *p){	
     struct bkn_params * params = (struct bkn_params*)p; 	 
 
@@ -84,10 +109,12 @@ double norm_bkn_int(double x,void *p){
     double brk = (params->brk);
     double max = (params->max);
     double m = (params->m);	
+    int cut_type = (params->cutoff_type);
 
-    double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
+    double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;
+    double C = Particles::cutoff_factor(mom_int / max, cut_type);	
 
-    return pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*exp(-mom_int/max);
+    return pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*C;
 }
 
 void Bknpower::set_norm(double n){
@@ -99,7 +126,7 @@ void Bknpower::set_norm(double n){
     gsl_integration_workspace *w1;
     w1 = gsl_integration_workspace_alloc (100);
     gsl_function F1;	
-    struct bkn_params params = {pspec1,pspec2,pbrk,pmax,mass_gr};
+    struct bkn_params params = {pspec1,pspec2,pbrk,pmax,mass_gr,cutoff_type};
     F1.function = &norm_bkn_int;
     F1.params   = &params;
     gsl_integration_qag(&F1,min,max,0,1e-7,100,1,w1,&norm_integral,&error);
@@ -108,7 +135,22 @@ void Bknpower::set_norm(double n){
     norm = n/(norm_integral*mass_gr*cee);
 }
 
-//Injection function to be integrated in cooling
+// // Injection function to be integrated in cooling
+// double injection_bkn_int(double x,void *p){	
+//     struct injection_bkn_params * params = (struct injection_bkn_params*)p; 	 
+
+//     double s1 = (params->s1);
+//     double s2 = (params->s2);
+//     double brk = (params->brk);
+//     double max = (params->max);
+//     double m = (params->m);	
+//     double n = (params->n);
+
+//     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
+
+//     return n*pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*exp(-mom_int/max);
+// }
+
 double injection_bkn_int(double x,void *p){	
     struct injection_bkn_params * params = (struct injection_bkn_params*)p; 	 
 
@@ -117,12 +159,17 @@ double injection_bkn_int(double x,void *p){
     double brk = (params->brk);
     double max = (params->max);
     double m = (params->m);	
-    double n = (params->n);
+    double n = (params->n); 
+    int cutoff_type = (params->cutoff_type);
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
 
-    return n*pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*exp(-mom_int/max);
+    double x_pos = mom_int/max; 
+    double C = Particles::cutoff_factor(x_pos, cutoff_type); 
+
+    return n*pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*C;
 }
+
 
 
 //Method to solve steady state continuity equation. NOTE: KN cross section not included in IC cooling
@@ -134,7 +181,7 @@ void Bknpower::cooling_steadystate(double ucom, double n0,double bfield,double r
 
     double integral, error;
     gsl_function F1;	
-    struct injection_bkn_params params = {pspec1,pspec2,pbrk,pmax,mass_gr,n0};
+    struct injection_bkn_params params = {pspec1,pspec2,pbrk,pmax,mass_gr,n0,cutoff_type};
     F1.function = &injection_bkn_int;
     F1.params   = &params;
 

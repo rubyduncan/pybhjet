@@ -55,7 +55,9 @@ void Powerlaw::set_p(double min,double gmax){
 //Method to set differential electron number density from known pspec, normalization, and momentum array
 void Powerlaw::set_ndens(){
     for (int i=0;i<size;i++){
-        ndens[i] = plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax);
+        const double x = p[i] / pmax;
+        const double C = Particles::cutoff_factor(x, cutoff_type);
+        ndens[i] = plnorm*pow(p[i], -pspec) * C;
     }
     initialize_gdens();
     gdens_differentiate();		
@@ -73,15 +75,20 @@ void Powerlaw::set_norm(double n){
 //Injection function to be integrated in cooling
 double injection_pl_int(double x,void *p){	
     struct injection_pl_params * params = (struct injection_pl_params*)p; 	
-    double s = (params->s);
-    double n = (params->n);
-    double m = (params->m);
-    double max = (params->max);
+    double s = (params->s); //pspec
+    double n = (params->n); // normalizataion
+    double m = (params->m); //mass 
+    double max = (params->max); //maximum (pmax - only nonthermal)
+    int cutoff_type = (params->cutoff_type); //type for cutoff
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
 
-    return n*pow(mom_int,-s)*exp(-mom_int/max);
+    //cutoff prescription: 
+    double x_pos = mom_int/max; 
+    double C = Particles::cutoff_factor(x_pos, cutoff_type);
+    return n*pow(mom_int,-s)*C; 
 }
+
 
 //Method to solve steady state continuity equation. NOTE: KN cross section not included in IC cooling
 void Powerlaw::cooling_steadystate(double ucom, double n0,double bfield,double r,double betaeff){
@@ -92,7 +99,7 @@ void Powerlaw::cooling_steadystate(double ucom, double n0,double bfield,double r
 
     double integral, error;
     gsl_function F1;	
-    struct injection_pl_params params = {pspec,plnorm,mass_gr,pmax};
+    struct injection_pl_params params = {pspec,plnorm,mass_gr,pmax,cutoff_type};
     F1.function = &injection_pl_int;
     F1.params   = &params;
 
@@ -106,7 +113,11 @@ void Powerlaw::cooling_steadystate(double ucom, double n0,double bfield,double r
             ndens[i] = (integral/tinj)/(pdot_ad*p[i]/(mass_gr*cee)+pdot_rad*(gamma[i]*p[i]/(mass_gr*cee)));
         }
         else {
-            ndens[size-1] = ndens[size-2]*pow(p[size-1]/p[size-2],-pspec-1)*exp(-1.);
+            double r = p[size-1]/p[size-2];
+            double C1 = Particles::cutoff_factor(p[size-1]/pmax, cutoff_type);
+            double C0 = Particles::cutoff_factor(p[size-2]/pmax, cutoff_type);
+            ndens[size-1] = ndens[size-2] * pow(r, -pspec - 1.0) * (C1 / C0);
+            // ndens[size-1] = ndens[size-2]*pow(p[size-1]/p[size-2],-pspec-1);
         }
     }		
     // the last bin is set by arbitrarily assuming cooled distribution; this is necessary because the integral 

@@ -1,0 +1,6 @@
+#!/Users/ruby/Desktop/University/phd/pybhjet/PyBHJet/pybhjet_venv/bin/python3
+import sys
+from astropy.io.fits.scripts.fitsheader import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())

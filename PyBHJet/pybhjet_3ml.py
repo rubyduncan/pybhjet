@@ -177,12 +177,16 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
             fix : yes
 
     """
+    cutoff_type = 0
 
     def _setup(self):
         self.bhjet = pybhjet.PyBHJet()
         self._cached_params   = None
         self._cached_E_keV    = None
         self._cached_flux_ph  = None
+
+        #code switches: 
+        self.bhjet.cutoff_type = int(self.cutoff_type)
 
         # plotting/components cache
         self._last_output              = None
@@ -288,6 +292,7 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
             self.bhjet.set_parameter("infosw", infosw)
             self.bhjet.set_parameter("EBLsw", EBLsw)
             
+            self.bhjet.cutoff_type = int(self.cutoff_type)
             self.bhjet.run()
 
             out = self.bhjet.get_output() #returning linear arrays for freq, flux 

@@ -13,7 +13,7 @@ source $ENV_NAME/bin/activate
 pip install --upgrade pip
 
 # Install required Python packages
-pip install numpy pandas matplotlib jupyterlab pybind11 setuptools cmake gsl ipympl
+pip install numpy pandas matplotlib astropy jupyterlab pybind11 setuptools cmake gsl ipympl
 
 # Check OS and install the correct compiler
 if [[ "$OSTYPE" == "darwin"* ]]; then

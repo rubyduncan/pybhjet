@@ -29,6 +29,8 @@ Mixed::Mixed(int s){
 }
 
 
+
+
 //Methods to set momentum/energy arrays and number density arrays
 void Mixed::set_p(double ucom,double bfield,double betaeff,double r,double fsc){	
     pmin_pl = av_th_p();
@@ -55,14 +57,34 @@ void Mixed::set_p(double gmax){
     }	
 }
 
+//The original set_ndens with hard coded exponential cutoff - just to save - 
+// void Mixed::set_ndens(){
+//     for (int i=0;i<size;i++){
+//         if (p[i] <= pmin_pl){
+// 	        ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta);
+//         } else if (p[i] < pmax_th) {
+// 	        ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta) + plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax_pl);
+//         } else {
+// 	        ndens[i] = plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax_pl);
+//         }
+//     }
+//     initialize_gdens();
+//     gdens_differentiate();	
+// }
+
 void Mixed::set_ndens(){
     for (int i=0;i<size;i++){
         if (p[i] <= pmin_pl){
-	        ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta);
-        } else if (p[i] < pmax_th) {
-	        ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta) + plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax_pl);
-        } else {
-	        ndens[i] = plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax_pl);
+            ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta);
+        } else { //calculate pl and the cutoff prescription first, then use in either case: 
+            const double x = p[i] / pmax_pl;
+            const double C = Particles::cutoff_factor(x, cutoff_type);
+            const double pl = plnorm*pow(p[i], -pspec) * C;
+            if (p[i] < pmax_th) {
+                ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta) + pl; 
+            } else {
+                ndens[i] = pl; 
+            }
         }
     }
     initialize_gdens();
@@ -97,27 +119,34 @@ void Mixed::set_norm(double n){
 }
 
 //Injection function to be integrated in cooling
-double injection_mixed_int(double x,void *p){	
+double injection_mixed_int(double x,void *p){	 //where x is gamma 
     struct injection_mixed_params * params = (struct injection_mixed_params*)p; 	 
 
-    double s = (params->s);
-    double t = (params->t); 
-    double nth = (params->nth);
-    double npl = (params->npl);  
-    double m = (params->m);
-    double min = (params->min);
-    double max = (params->max);	
-    double cutoff = (params->cutoff);
+    double s = (params->s); //pspec
+    double t = (params->t); // temp
+    double nth = (params->nth); //thermal norm
+    double npl = (params->npl);  //nonthermal norm
+    double m = (params->m); //mass 
+    double min = (params->min); //gamma min
+    double max = (params->max);	// max
+    double cutoff = (params->cutoff); // pl_max (atm)
+    int cutoff_type = (params->cutoff_type); // gets prescription for cutoff from cutoff_type fcn
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
 
-    if (x<=min) {
-        return  nth*pow(mom_int,2.)*exp(-x/t);
+    // changes for the cutoff type: 
+    double x_pos = mom_int/cutoff; 
+    double C = Particles::cutoff_factor(x_pos, cutoff_type); 
+    double pl = npl * pow(mom_int,-s) * C; 
+    double therm_calc = nth*pow(mom_int,2.)*exp(-x/t); 
+
+    if (x <= min) {
+        return therm_calc;
     } else if (x < max) {
-        return nth*pow(mom_int,2.)*exp(-x/t) + npl*pow(mom_int,-s)*exp(-mom_int/cutoff);
+        return therm_calc + pl;
     } else {
-        return npl*pow(mom_int,-s)*exp(-mom_int/cutoff);
-    } 
+        return pl;
+    }
 }
 
 //Method to solve steady state continuity equation. NOTE: KN cross section not included in IC cooling
@@ -133,7 +162,7 @@ void Mixed::cooling_steadystate(double ucom, double n0,double bfield,double r,do
 
     double integral, error;
     gsl_function F1;	
-    struct injection_mixed_params params = {pspec,theta,thnorm,plnorm,mass_gr,gam_min,gam_max,pmax_pl};
+    struct injection_mixed_params params = {pspec,theta,thnorm,plnorm,mass_gr,gam_min,gam_max,pmax_pl,cutoff_type};
     F1.function = &injection_mixed_int;
     F1.params   = &params;
 

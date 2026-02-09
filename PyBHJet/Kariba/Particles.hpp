@@ -8,6 +8,7 @@
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_integration.h>
+#include <cmath>
 
 #define cee             GSL_CONST_CGSM_SPEED_OF_LIGHT
 #define emgm            GSL_CONST_CGSM_MASS_ELECTRON
@@ -43,6 +44,7 @@ typedef struct bkn_params {
     double brk;
     double max; 
     double m;
+    int cutoff_type;
 } bkn_params;
 
 typedef struct th_params { 
@@ -65,6 +67,7 @@ typedef struct injection_mixed_params {
     double min;
     double max;
     double cutoff;
+    int cutoff_type; 
 } injection_mixed_params;
 
 typedef struct injection_kappa_params {
@@ -79,6 +82,7 @@ typedef struct injection_pl_params {
     double n; 
     double m; 
     double max;
+    int cutoff_type;
 } injection_pl_params;
 
 typedef struct injection_bkn_params {
@@ -88,6 +92,7 @@ typedef struct injection_bkn_params {
     double max; 
     double m;
     double n;
+    int cutoff_type;
 } injection_bkn_params;
 
 class Particles {
@@ -102,9 +107,16 @@ class Particles {
         double *gamma;			//array of particle kinetic energies for each momentum
         double *gdens;		    //array of number density per unit volume, per unit gamma
         double *gdens_diff;     //array with differential of number density for radiation calculation
+
+        //for the cutoff function
+        int cutoff_type = 0;    // setting cutoff type within powerlaw/mixed 
 						        
     public:
         ~Particles();
+        
+        static inline double cutoff_factor(double x, int type); //static helper for cutoff definitions ??
+        int get_cutoff_type()const              { return cutoff_type; } // cutoff getter 
+        void set_cutoff_type(int t)             { cutoff_type = t; }  //setter 
         
         void set_mass(double m);
         void initialize_gdens();	
@@ -126,6 +138,41 @@ class Particles {
         double av_psq();
         double av_gammasq();
 
-        void test_arrays();				
+        void test_arrays();	
+        
 };
+
+//need this to be accessible by both mixed and powerlaw, so here goes: 
+// this has three options for the behavior of the cutoff in the electron spectrum: 
+// 1. the traditional exponential cutoff exp(e/ecut)
+// 2. this is from Comisso 2021, exp[(e/ecut)^2] - magnetic turbulence PIC sim 
+// 3. also comisso 2021, sech[(e/ecut)^2]
+
+// in principle, meant to act like this: (in set_ndens or injection_mixed_int), in mixed.cpp or powerlaw.cpp: 
+// C = cutoff_factor(p[i]/pmax_pl, cutoff_type); then ndens = npl * mom_int thing * C
+
+// Three cutoff types, with x = p/p_cut (momentum)
+//cutoff type 0 = exp(-x)
+// cutoff type 1 = exp(-x^2)
+
+// cutoff type 2 = sech(x)^2 = 1/cosh(x)^2 
+// cosh(x) = ( e^x + e^-x ) / 2
+// 
+inline double Particles::cutoff_factor(double x, int type) {
+    if (type == 0) return std::exp(-x); // classic exponential cutoff 
+    if (type == 1) return std::exp(-(x * x)); // 
+    if (type == 2) {    // sech^2 cutoff
+        const double ax = std::fabs(x); 
+        if (ax < 30.0) { //cosh(30) ~ 5e12 
+            const double c = std::cosh(ax); //directly calculate sech(x)
+            return 1.0 / (c * c);
+        } else {
+            const double t = std::exp(-2.0 * ax); //approx
+            const double denom = 1.0 + t;
+            return 4.0 * t / (denom * denom);
+        }
+    }
+    return std::exp(-x); 
+}
+
 #endif

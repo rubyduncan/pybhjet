@@ -117,5 +117,7 @@ PYBIND11_MODULE(pybhjet, m){
         // Implement __getitem__ and __setitem__ for dictionary-like access
         .def("__getitem__", &BhJetClass::get_parameter, "Get the value of a parameter by name.")
         .def("__setitem__", &BhJetClass::set_parameter, "Set the value of a parameter by name.")
+        //cutoff function switch
+        .def_property("cutoff_type", &BhJetClass::get_cutoff_type, &BhJetClass::set_cutoff_type)
         ;
 }
