@@ -1,0 +1,86 @@
+Metadata-Version: 2.4
+Name: astromodels
+Version: 2.5.1
+Summary: Astromodels contains models to be used in likelihood or Bayesian 
+Author-email: Giacomo Vianello <giacomo.vianello@gmail.com>
+Maintainer-email: Niccolò Di Lalla <niccolo.dilalla@stanford.edu>
+License-Expression: BSD-3-Clause
+Project-URL: Documentation, https://astromodels.readthedocs.io
+Project-URL: Homepage, https://github.com/threeML/astromodels
+Project-URL: Issues, https://github.com/threeML/astromodels/issues
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Classifier: Intended Audience :: Science/Research
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Environment :: Console
+Requires-Python: >=3.9.0
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.6
+Requires-Dist: PyYAML>=5.1
+Requires-Dist: scipy>=0.14
+Requires-Dist: astropy>=1.2
+Requires-Dist: dill
+Requires-Dist: future
+Requires-Dist: numba
+Requires-Dist: llvmlite<0.46; platform_system == "Darwin" and platform_machine == "x86_64"
+Requires-Dist: h5py
+Requires-Dist: pandas
+Requires-Dist: tables
+Requires-Dist: colorama
+Requires-Dist: omegaconf
+Requires-Dist: rich
+Requires-Dist: joblib
+Requires-Dist: versioneer
+Provides-Extra: tests
+Requires-Dist: pytest; extra == "tests"
+Requires-Dist: pytest-codecov; extra == "tests"
+Provides-Extra: docs
+Requires-Dist: sphinx>=1.4; extra == "docs"
+Requires-Dist: sphinx_rtd_theme; extra == "docs"
+Requires-Dist: nbsphinx; extra == "docs"
+Requires-Dist: sphinx-autoapi; extra == "docs"
+Dynamic: license-file
+
+# astromodels
+
+![CI](https://github.com/threeML/astromodels/workflows/CI/badge.svg)
+[![codecov](https://codecov.io/gh/threeML/astromodels/branch/master/graph/badge.svg)](https://codecov.io/gh/threeML/astromodels)
+[![Documentation Status](https://readthedocs.org/projects/astromodels/badge/?version=latest)](http://astromodels.readthedocs.io/en/latest/?badge=latest)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+![GitHub contributors](https://img.shields.io/github/contributors/threeML/astromodels)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5646925.svg)](https://doi.org/10.5281/zenodo.5646925)
+
+
+
+![GitHub pull requests](https://img.shields.io/github/issues-pr/threeML/astromodels)
+![GitHub issues](https://img.shields.io/github/issues/threeML/astromodels)
+## PyPi
+
+[![PyPI version fury.io](https://badge.fury.io/py/astromodels.svg)](https://pypi.python.org/pypi/astromodels/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/astromodels)
+
+## Conda
+![Conda](https://img.shields.io/conda/pn/threeml/astromodels)
+![Conda](https://img.shields.io/conda/dn/threeml/astromodels)
+
+
+![alt text](https://raw.githubusercontent.com/threeml/astromodels/master/docs/media/large_logo.png)
+
+Astromodels is a very flexible framework to define models for likelihood or Bayesian analysis of astrophysical data.
+
+Even though it has been designed having in mind analysis in the spectral domain, it can be used also as a toolbox containing functions of any variable.
+
+Astromodels is not a modeling package, it only gives you the tools to build a model as complex as you need. You then need a separate package (such as [3ML](github.com/threeML/threeML)) to fit that model to the data.
+
+Some of the features which distinguish astromodels from other similar packages are:
+- a model can contain an arbitrary number of sources at different positions in the sky
+- parameters can be linked through any function (not only identity) 
+- parameters can vary with auxiliary variables such as time. For example, you can build a model where some parameters vary with time, and you can fit the parameters of the function which describe this variability. Similary you can build models where parameters vary with the phase of a pulsar, and so on. 
+- models can be saved in and loaded from YAML file (a human-readable format)
+- physical units are fully supported in input, but they are handled so that they don’t slow down the actualy computation of the models.
+
+Astromodels has been designed with performance as priority, and is considerably faster than other python-based solution for the same problem, such as astropy.modeling and the modeling part of sherpa.
+
+Documentation: [https://astromodels.readthedocs.org/en/latest/](https://astromodels.readthedocs.org/en/latest/)

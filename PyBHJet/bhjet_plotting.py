@@ -106,7 +106,7 @@ def preprocess_jet_profile(output, include_descriptions=False):
         # Put data into a DataFrame
         jet_profile_df = pd.DataFrame({
             "z_rg": z_rg,
-            "zone_rg": zone_rg,
+            "zone_rg": zone_rg, #zone radius
             "zone_bfield": zone_bfield,
             "zone_lepdens": zone_lepdens,
             "zone_gamma": zone_gamma,

@@ -30,9 +30,10 @@ Powerlaw::Powerlaw(int s){
 //Methods to set momentum/energy arrays
 void Powerlaw::set_p(double min,double ucom,double bfield,double betaeff,double r,double fsc){	
     pmin = min;
-    pmax = max_p(ucom,bfield,betaeff,r,fsc);	
+    pcut = max_p(ucom,bfield,betaeff,r,fsc);	
 
-    double pinc = (log10(pmax)-log10(pmin))/(size-1);
+    double p_grid_max = 10 * pcut; 
+    double pinc = (log10(p_grid_max)-log10(pmin))/(size-1);
 
     for (int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin)+i*pinc);
@@ -42,9 +43,10 @@ void Powerlaw::set_p(double min,double ucom,double bfield,double betaeff,double 
 
 void Powerlaw::set_p(double min,double gmax){
     pmin = min;
-    pmax = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
+    pcut = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
     
-    double pinc = (log10(pmax)-log10(pmin))/(size-1);
+    double p_grid_max = 10 * pcut; 
+    double pinc = (log10(p_grid_max)-log10(pmin))/(size-1);
 
     for (int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin)+i*pinc);
@@ -55,7 +57,7 @@ void Powerlaw::set_p(double min,double gmax){
 //Method to set differential electron number density from known pspec, normalization, and momentum array
 void Powerlaw::set_ndens(){
     for (int i=0;i<size;i++){
-        const double x = p[i] / pmax;
+        const double x = p[i] / pcut;
         const double C = Particles::cutoff_factor(x, cutoff_type);
         ndens[i] = plnorm*pow(p[i], -pspec) * C;
     }
@@ -78,7 +80,7 @@ double injection_pl_int(double x,void *p){
     double s = (params->s); //pspec
     double n = (params->n); // normalizataion
     double m = (params->m); //mass 
-    double max = (params->max); //maximum (pmax - only nonthermal)
+    double max = (params->max); //maximum (pcut- only nonthermal)
     int cutoff_type = (params->cutoff_type); //type for cutoff
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
@@ -99,7 +101,7 @@ void Powerlaw::cooling_steadystate(double ucom, double n0,double bfield,double r
 
     double integral, error;
     gsl_function F1;	
-    struct injection_pl_params params = {pspec,plnorm,mass_gr,pmax,cutoff_type};
+    struct injection_pl_params params = {pspec,plnorm,mass_gr,pcut,cutoff_type};
     F1.function = &injection_pl_int;
     F1.params   = &params;
 
@@ -114,8 +116,8 @@ void Powerlaw::cooling_steadystate(double ucom, double n0,double bfield,double r
         }
         else {
             double r = p[size-1]/p[size-2];
-            double C1 = Particles::cutoff_factor(p[size-1]/pmax, cutoff_type);
-            double C0 = Particles::cutoff_factor(p[size-2]/pmax, cutoff_type);
+            double C1 = Particles::cutoff_factor(p[size-1]/pcut, cutoff_type);
+            double C0 = Particles::cutoff_factor(p[size-2]/pcut, cutoff_type);
             ndens[size-1] = ndens[size-2] * pow(r, -pspec - 1.0) * (C1 / C0);
             // ndens[size-1] = ndens[size-2]*pow(p[size-1]/p[size-2],-pspec-1);
         }

@@ -15,6 +15,9 @@ pip install --upgrade pip
 # Install required Python packages
 pip install numpy pandas matplotlib astropy jupyterlab pybind11 setuptools cmake gsl ipympl
 
+#can be used to ignore the XSPEC verison because it will try (and fail) to find it 
+# env -u HEADAS -u ASTRO_XSPEC_VERSION -u XSPEC_INC_PATH python -m pip install --no-cache-dir astromodels
+
 # Check OS and install the correct compiler
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS - Use Clang

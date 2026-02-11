@@ -19,7 +19,7 @@ class Mixed: public Particles {
     private:
         double thnorm, theta, Temp;
         double pspec, plnorm;
-        double pmin_th, pmax_th, pmin_pl, pmax_pl;
+        double pmin_th, pmax_th, pmin_pl, pcut_pl; //was pmax_pl 
         double plfrac;
     public:
         Mixed(int s);			

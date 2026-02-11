@@ -166,7 +166,7 @@ inline double Particles::cutoff_factor(double x, int type) {
         if (ax < 30.0) { //cosh(30) ~ 5e12 
             const double c = std::cosh(ax); //directly calculate sech(x)
             return 1.0 / (c * c);
-        } else {
+        } else { // maybe should replace this with taylor exp .
             const double t = std::exp(-2.0 * ax); //approx
             const double denom = 1.0 + t;
             return 4.0 * t / (denom * denom);

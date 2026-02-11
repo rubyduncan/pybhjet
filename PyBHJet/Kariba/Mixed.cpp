@@ -29,14 +29,12 @@ Mixed::Mixed(int s){
 }
 
 
-
-
 //Methods to set momentum/energy arrays and number density arrays
 void Mixed::set_p(double ucom,double bfield,double betaeff,double r,double fsc){	
     pmin_pl = av_th_p();
-    pmax_pl = std::max(max_p(ucom,bfield,betaeff,r,fsc),pmax_th);	
-
-    double pinc = (log10(pmax_pl)-log10(pmin_th))/(size-1);
+    pcut_pl = std::max(max_p(ucom,bfield,betaeff,r,fsc),pmax_th);
+    double p_grid_max = 10*pcut_pl; 
+    double pinc = (log10(p_grid_max)-log10(pmin_th))/(size-1);
 
     for (int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin_th)+i*pinc);
@@ -47,9 +45,9 @@ void Mixed::set_p(double ucom,double bfield,double betaeff,double r,double fsc){
 //Same as above, but assuming a fixed maximum Lorentz factor
 void Mixed::set_p(double gmax){
     pmin_pl = av_th_p();
-    pmax_pl = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
+    pcut_pl = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
 
-    double pinc = (log10(pmax_pl)-log10(pmin_th))/(size-1);
+    double pinc = (log10(pcut_pl)-log10(pmin_th))/(size-1);
 
     for (int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin_th)+i*pinc);
@@ -57,27 +55,12 @@ void Mixed::set_p(double gmax){
     }	
 }
 
-//The original set_ndens with hard coded exponential cutoff - just to save - 
-// void Mixed::set_ndens(){
-//     for (int i=0;i<size;i++){
-//         if (p[i] <= pmin_pl){
-// 	        ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta);
-//         } else if (p[i] < pmax_th) {
-// 	        ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta) + plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax_pl);
-//         } else {
-// 	        ndens[i] = plnorm*pow(p[i],-pspec)*exp(-p[i]/pmax_pl);
-//         }
-//     }
-//     initialize_gdens();
-//     gdens_differentiate();	
-// }
-
 void Mixed::set_ndens(){
     for (int i=0;i<size;i++){
         if (p[i] <= pmin_pl){
             ndens[i] = thnorm*pow(p[i],2.)*exp(-gamma[i]/theta);
         } else { //calculate pl and the cutoff prescription first, then use in either case: 
-            const double x = p[i] / pmax_pl;
+            const double x = p[i] / pcut_pl;
             const double C = Particles::cutoff_factor(x, cutoff_type);
             const double pl = plnorm*pow(p[i], -pspec) * C;
             if (p[i] < pmax_th) {
@@ -115,7 +98,7 @@ void Mixed::set_plfrac(double f){
 
 void Mixed::set_norm(double n){
     thnorm = (1.-plfrac)*n/(pow(mass_gr*cee,3.)*theta*K2(1./theta));
-    plnorm = plfrac*n*(1.-pspec)/(pow(pmax_pl,(1.-pspec))-pow(pmin_pl,(1.-pspec)));	
+    plnorm = plfrac*n*(1.-pspec)/(pow(pcut_pl,(1.-pspec))-pow(pmin_pl,(1.-pspec)));	
 }
 
 //Injection function to be integrated in cooling
@@ -128,8 +111,8 @@ double injection_mixed_int(double x,void *p){	 //where x is gamma
     double npl = (params->npl);  //nonthermal norm
     double m = (params->m); //mass 
     double min = (params->min); //gamma min
-    double max = (params->max);	// max
-    double cutoff = (params->cutoff); // pl_max (atm)
+    double max = (params->max);	// gamma max
+    double cutoff = (params->cutoff); // pl_cut (atm)
     int cutoff_type = (params->cutoff_type); // gets prescription for cutoff from cutoff_type fcn
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
@@ -162,7 +145,7 @@ void Mixed::cooling_steadystate(double ucom, double n0,double bfield,double r,do
 
     double integral, error;
     gsl_function F1;	
-    struct injection_mixed_params params = {pspec,theta,thnorm,plnorm,mass_gr,gam_min,gam_max,pmax_pl,cutoff_type};
+    struct injection_mixed_params params = {pspec,theta,thnorm,plnorm,mass_gr,gam_min,gam_max,pcut_pl,cutoff_type};
     F1.function = &injection_mixed_int;
     F1.params   = &params;
 
@@ -207,6 +190,7 @@ double Mixed::max_p(double ucom,double bfield,double betaeff,double r,double fsc
     c = accon/syncon;
 
     gmax = (-b+pow(pow(b,2.)+4.*c,1./2.))/2.;
+    // std::cout << "gcut (ecut)calc from fsc:" << gmax << std::endl;
 
     return pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
 }
@@ -309,7 +293,7 @@ double Mixed::count_pl_particles(){
     struct pl_params params = {pspec,plnorm};
     F1.function = &pl_num_dens_int;
     F1.params   = &params;
-    gsl_integration_qag(&F1,pmin_pl,pmax_pl,0,1e-7,100,1,w1,&integral1,&error1);
+    gsl_integration_qag(&F1,pmin_pl,pcut_pl,0,1e-7,100,1,w1,&integral1,&error1);
     gsl_integration_workspace_free (w1);
 
     return integral1;
@@ -323,7 +307,7 @@ double Mixed::av_pl_p(){
     struct pl_params params =  {pspec,plnorm};
     F1.function = &av_pl_p_int;
     F1.params   = &params;
-    gsl_integration_qag(&F1,pmin_pl,pmax_pl,0,1e-7,100,1,w1,&integral1,&error1);
+    gsl_integration_qag(&F1,pmin_pl,pcut_pl,0,1e-7,100,1,w1,&integral1,&error1);
     gsl_integration_workspace_free (w1);
     integral2 = count_pl_particles();
 
@@ -343,6 +327,6 @@ void Mixed::test(){
     std::cout << "Temperature in keV: " << Temp << std::endl;
     std::cout << "Number density: " << count_particles() << std::endl;	
     std::cout << "Thermal monetum limits: " << pmin_th << " " << pmax_th << std::endl;
-    std::cout << "Non-thermal momentum limits: " << pmin_pl << " " << pmax_pl << std::endl;
+    std::cout << "Non-thermal momentum limits: " << pmin_pl << " " << pcut_pl << std::endl;
 }
 

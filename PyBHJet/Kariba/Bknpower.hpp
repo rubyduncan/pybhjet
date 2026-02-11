@@ -7,7 +7,7 @@
 class Bknpower: public Particles {
     private:
         double pspec1, pspec2, norm;
-        double pmin, pbrk, pmax;
+        double pmin, pbrk, p_cut; // p_cut used to be pmax 
     public:
         Bknpower(int s);		
 

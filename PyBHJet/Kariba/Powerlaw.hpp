@@ -7,7 +7,7 @@
 class Powerlaw: public Particles {
     private:
         double pspec, plnorm;
-        double pmin, pmax;
+        double pmin, pcut; //was pmax
     public:
         Powerlaw(int s);		
 

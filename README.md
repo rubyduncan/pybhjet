@@ -70,7 +70,6 @@ If you want to install dependencies manually:
   - `pybind11`
   - `ipympl`
 
-
 #### Steps: 
 
 1. Clone the repository: (or download as zip file from git) 

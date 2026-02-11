@@ -29,23 +29,27 @@ Bknpower::Bknpower(int s){
 //Methods to set momentum/energy arrays
 void Bknpower::set_p(double min,double brk,double ucom,double bfield,double betaeff,double r,double fsc){	
     pmin = min;
-    pbrk = brk;
-    pmax = max_p(ucom,bfield,betaeff,r,fsc);	
+    pbrk = brk;	
+    double pinc = 0.0; //del momentum interval 
+    double p_grid_max = 0.0; // actual maximum energy of the spectrum 
 
-    double pinc = (log10(pmax)-log10(pmin))/(size-1);
+    p_cut = max_p(ucom,bfield,betaeff,r,fsc); //cutoff calculation in momentum grid (was defined as p_max)
+    p_grid_max = p_cut * 10; //extends to get max energy 
+    pinc = (log10(p_grid_max)-log10(pmin))/(size-1); 
 
-    for (int i=0;i<size;i++){
+    for(int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin)+i*pinc);
         gamma[i] = pow(pow(p[i]/(mass_gr*cee),2.)+1.,1./2.);
-    }
+        }
 }
 
-void Bknpower::set_p(double min,double brk,double gmax){
+void Bknpower::set_p(double min,double brk,double gmax){ // this is directly for setting maximum lorentz factor of electrons 
     pmin = min;
     pbrk = brk;
-    pmax = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
+    p_cut = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
 
-    double pinc = (log10(pmax)-log10(pmin))/(size-1);
+    double p_grid_max = 10*p_cut; // actual maximum energy of the spectrum, extended just a bit 
+    double pinc = (log10(p_grid_max)-log10(pmin))/(size-1);
 
     for (int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin)+i*pinc);
@@ -54,10 +58,9 @@ void Bknpower::set_p(double min,double brk,double gmax){
 }
 
 //Method to set differential electron number density from known pspec, normalization, and momentum array
-
 void Bknpower::set_ndens(){
     for (int i=0;i<size;i++){
-        double x = p[i] / pmax;
+        double x = p[i] / p_cut; 
         double C = Particles::cutoff_factor(x, cutoff_type);
         ndens [i] = norm*pow(p[i]/pbrk,-pspec1)/(1.+pow(p[i]/pbrk,-pspec1+pspec2))*C;
         }
@@ -65,13 +68,6 @@ void Bknpower::set_ndens(){
     gdens_differentiate();	
 }
 
-// void Bknpower::set_ndens(){
-//     for (int i=0;i<size;i++){
-//         ndens[i] = norm*pow(p[i]/pbrk,-pspec1)/(1.+pow(p[i]/pbrk,-pspec1+pspec2))*exp(-p[i]/pmax);
-//     }
-//     initialize_gdens();
-//     gdens_differentiate();		
-// }
 
 //methods to set the slopes, break and normalization
 void Bknpower::set_pspec1(double s1){
@@ -106,8 +102,8 @@ double norm_bkn_int(double x,void *p){
 
     double s1 = (params->s1);
     double s2 = (params->s2);
-    double brk = (params->brk);
-    double max = (params->max);
+    double brk = (params->brk); // p_brk
+    double max = (params->max); //p_cut
     double m = (params->m);	
     int cut_type = (params->cutoff_type);
 
@@ -119,14 +115,15 @@ double norm_bkn_int(double x,void *p){
 
 void Bknpower::set_norm(double n){
     double norm_integral, error, min, max;
+    double p_grid_max = p_cut * 10; //extends to get max energy 
 
     min = pow(pow(pmin/(mass_gr*cee),2.)+1.,1./2.);
-    max = pow(pow(pmax/(mass_gr*cee),2.)+1.,1./2.);
+    max = pow(pow(p_grid_max/(mass_gr*cee),2.)+1.,1./2.);
 
     gsl_integration_workspace *w1;
     w1 = gsl_integration_workspace_alloc (100);
     gsl_function F1;	
-    struct bkn_params params = {pspec1,pspec2,pbrk,pmax,mass_gr,cutoff_type};
+    struct bkn_params params = {pspec1,pspec2,pbrk,p_cut,mass_gr,cutoff_type};
     F1.function = &norm_bkn_int;
     F1.params   = &params;
     gsl_integration_qag(&F1,min,max,0,1e-7,100,1,w1,&norm_integral,&error);
@@ -135,29 +132,14 @@ void Bknpower::set_norm(double n){
     norm = n/(norm_integral*mass_gr*cee);
 }
 
-// // Injection function to be integrated in cooling
-// double injection_bkn_int(double x,void *p){	
-//     struct injection_bkn_params * params = (struct injection_bkn_params*)p; 	 
-
-//     double s1 = (params->s1);
-//     double s2 = (params->s2);
-//     double brk = (params->brk);
-//     double max = (params->max);
-//     double m = (params->m);	
-//     double n = (params->n);
-
-//     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	
-
-//     return n*pow(mom_int/brk,-s1)/(1.+pow(mom_int/brk,-s1+s2))*exp(-mom_int/max);
-// }
 
 double injection_bkn_int(double x,void *p){	
     struct injection_bkn_params * params = (struct injection_bkn_params*)p; 	 
 
     double s1 = (params->s1);
     double s2 = (params->s2);
-    double brk = (params->brk);
-    double max = (params->max);
+    double brk = (params->brk); //p_brk
+    double max = (params->max); //p_cut 
     double m = (params->m);	
     double n = (params->n); 
     int cutoff_type = (params->cutoff_type);
@@ -181,7 +163,7 @@ void Bknpower::cooling_steadystate(double ucom, double n0,double bfield,double r
 
     double integral, error;
     gsl_function F1;	
-    struct injection_bkn_params params = {pspec1,pspec2,pbrk,pmax,mass_gr,n0,cutoff_type};
+    struct injection_bkn_params params = {pspec1,pspec2,pbrk,p_cut,mass_gr,n0,cutoff_type};
     F1.function = &injection_bkn_int;
     F1.params   = &params;
 
@@ -239,6 +221,7 @@ void Bknpower::test(){
     std::cout << "pspec1: " << pspec1 << std::endl;
     std::cout << "pspec2: " << pspec2 << std::endl;
     std::cout << "pbreak: " << pbrk << std::endl;
+    std::cout << "p_cut:  " << p_cut << std::endl; 
     std::cout << "Array size: " << size << std::endl;
     std::cout << "Default normalization: " << norm << std::endl;
     std::cout << "Particle mass: " << mass_gr << std::endl;
