@@ -1,0 +1,21 @@
+# python virtual environments
+pybhjet_venv/
+.venv/
+venv/
+env/
+
+# python cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# mac
+.DS_Store
+
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.egg-info/
+dist/
+build/
