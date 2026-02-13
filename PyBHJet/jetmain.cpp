@@ -308,7 +308,8 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
             acc_lep.set_pspec(pspec);
             acc_lep.set_plfrac(zone.nth_frac);
             // std::cout << "gmax before:" << acc_lep.get_gamma()[nel-1] << std::endl;
-            
+
+
             //if f_sc < 10 it's the acceleration efficiency, else it's the desired maximum lorentz factor
             if (f_sc<10.){
                 acc_lep.set_p(Urad,zone.bfield,f_beta,zone.r,f_sc);

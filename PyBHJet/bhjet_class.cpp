@@ -213,8 +213,8 @@ void BhJetClass::run() {
     //this is what was used in the bhwrap file for running bhjet alone ---- 
     int npar = 28;
     int ne = 201;
-    double emin	= -9;
-    double emax	= 3;
+    double emin	= -11;
+    double emax	= 10;
     double einc	= (emax-emin)/ne;
 
     auto ebins = std::make_unique<double[]>(ne); //energy bins 

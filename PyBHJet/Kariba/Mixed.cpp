@@ -32,7 +32,7 @@ Mixed::Mixed(int s){
 //Methods to set momentum/energy arrays and number density arrays
 void Mixed::set_p(double ucom,double bfield,double betaeff,double r,double fsc){	
     pmin_pl = av_th_p();
-    pcut_pl = std::max(max_p(ucom,bfield,betaeff,r,fsc),pmax_th);
+    pcut_pl = std::max(max_p(ucom,bfield,betaeff,r,fsc),pmax_th); 
     double p_grid_max = 10*pcut_pl; 
     double pinc = (log10(p_grid_max)-log10(pmin_th))/(size-1);
 
@@ -112,7 +112,7 @@ double injection_mixed_int(double x,void *p){	 //where x is gamma
     double m = (params->m); //mass 
     double min = (params->min); //gamma min
     double max = (params->max);	// gamma max
-    double cutoff = (params->cutoff); // pl_cut (atm)
+    double cutoff = (params->cutoff); // pcut_pl (atm)
     int cutoff_type = (params->cutoff_type); // gets prescription for cutoff from cutoff_type fcn
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;	

@@ -43,6 +43,7 @@ void Bknpower::set_p(double min,double brk,double ucom,double bfield,double beta
         }
 }
 
+
 void Bknpower::set_p(double min,double brk,double gmax){ // this is directly for setting maximum lorentz factor of electrons 
     pmin = min;
     pbrk = brk;
@@ -115,7 +116,8 @@ double norm_bkn_int(double x,void *p){
 
 void Bknpower::set_norm(double n){
     double norm_integral, error, min, max;
-    double p_grid_max = p_cut * 10; //extends to get max energy 
+
+    double p_grid_max = 10*p_cut;
 
     min = pow(pow(pmin/(mass_gr*cee),2.)+1.,1./2.);
     max = pow(pow(p_grid_max/(mass_gr*cee),2.)+1.,1./2.);
