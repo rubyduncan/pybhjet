@@ -1,44 +1,20 @@
 #!/bin/bash
 
-# Set the environment name
 ENV_NAME="pybhjet_venv"
 
-# Create the virtual environment
 python3 -m venv $ENV_NAME
-
-# Activate the virtual environment
 source $ENV_NAME/bin/activate
-
-# Upgrade pip
 pip install --upgrade pip
 
-# Install required Python packages
-pip install numpy pandas matplotlib astropy jupyterlab pybind11 setuptools cmake gsl ipympl
+# Install required Python packages - just for pybhjet 
+pip install numpy pandas matplotlib astropy jupyterlab pybind11 setuptools cmake gsl ipympl 
 
-#can be used to ignore the XSPEC verison because it will try (and fail) to find it 
+# if threeML will be used; uncomment this line as well, and make sure your astromodels install is complete first
+#pip install astromodels 
+#pip install threeml
+
+# Can be used to ignore the XSPEC verison because it may try (and fail) to find it if using threeml
 # env -u HEADAS -u ASTRO_XSPEC_VERSION -u XSPEC_INC_PATH python -m pip install --no-cache-dir astromodels
-
-# Check OS and install the correct compiler
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS - Use Clang
-    brew install llvm@15
-    export CC=$(brew --prefix llvm@15)/bin/clang
-    export CXX=$(brew --prefix llvm@15)/bin/clang++
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Linux - Use GCC
-    sudo apt update && sudo apt install -y gcc g++ make cmake
-    export CC=gcc
-    export CXX=g++
-else
-    echo "Unsupported OS. Please install a compatible compiler manually."
-fi
-
-# Install GSL
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    brew install gsl
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    sudo apt install -y libgsl-dev
-fi
 
 # Print success message
 echo "Virtual environment '$ENV_NAME' is ready."
