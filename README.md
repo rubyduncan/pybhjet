@@ -1,6 +1,6 @@
 # PyBHJet
 
-PyBHJet is a Python interface and plotting suite for the **BHJet** code. It allows users to configure, run, and visualize results from BHJet, though no analysis or fitting software is included yet. This wrapper provides an intuitive way to interact with the underlying C++ implementation and preprocess the output for analysis and visualization. A script to turn BHJet into a custom model in 3ML is also included. 
+PyBHJet is a Python interface for the **BHJet** code. It allows users to configure, run, and visualize results from BHJet, and also includes a function that will turn BHJet into a custom model in 3ML. This wrapper provides an intuitive way to interact with the underlying C++ implementation and preprocess the output for analysis and visualization. The calculation time of the model is small enough (2-3s) that it can be used for fitting/sampling. 
 
 ---
 
