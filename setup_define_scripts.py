@@ -372,76 +372,6 @@ def plot_ogip_with_model(*ogips, model_obj, fig=None, model_labels=None):
 
     return fig_out
 
-
-def old_hz_plot_model_space_sed(data_dict,model_components,e_min_keV=1e-9,e_max_keV=1e3,n_points=1000,radio_key="rad",ir_key="ir",uv_key="uv"):
-    """
-    Plot radio/IR/UV data plus BHJet components in hz, nuS_nu 
-
-    Parameters
-    ----------
-    data_dict : dict
-        Mapping dataset name -> plugin (from build_model_and_data_from_yaml).
-        Must contain entries for radio_key, ir_key, uv_key.
-    components : dict
-        Mapping logical component name -> astromodels function
-        (from build_components_from_yaml), must contain 'jet', 'gal_ext',
-        'intr_ext', 'dust_ext'.
-    e_min_keV, e_max_keV : float
-        Energy range in keV for computing the model curves.
-    n_points : int
-        Number of points in log-space energy grid.
-    radio_key, ir_key, uv_key : str
-        Keys in data_dict for the radio / IR / UV XYLike plugins.
-    """
-
-    # pull the XYLike plugins from data_dict
-    rad_data = data_dict[radio_key]
-    ir_data  = data_dict[ir_key]
-    uv_data  = data_dict[uv_key]
-
-    # pull the component functions from the components dict
-    jet      = model_components["jet"]
-    gal_ext  = model_components["gal_ext"]
-    intr_ext = model_components["intr_ext"]
-    dust_ext = model_components["dust_ext"]
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    # data + model over data range, to show effects of each
-    hz_plot_xylike_data(rad_data, ax=ax, color_data="red",    color_model="red")
-    hz_plot_xylike_data(ir_data,  ax=ax, color_data="orange", color_model="orange")
-    hz_plot_xylike_data(uv_data,  ax=ax, color_data="yellow", color_model="yellow")
-
-    # BHJet components in model space
-    ene = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), n_points)
-
-    # just the jet
-    jet_flux = jet(ene)  # ph / (cm^2 s keV)
-    jet_flux_mjy = photon_flux_density_to_mjy(jet_flux, ene)
-
-    # dust * jet
-    dust_flux = dust_ext(ene) * jet(ene)
-    dust_flux_mjy = photon_flux_density_to_mjy(dust_flux, ene)
-
-    # gal * intr * jet
-    abs_flux = gal_ext(ene) * intr_ext(ene) * jet(ene)
-    abs_flux_mjy = photon_flux_density_to_mjy(abs_flux, ene)
-
-    ene_hz = kev_to_hz(ene)
-
-    ax.plot(ene_hz, jet_flux_mjy * ene_hz / 1e26,
-            ls="-",  lw=1.5, color="darkblue",  label="jet")
-    ax.plot(ene_hz, dust_flux_mjy * ene_hz / 1e26,
-            ls="--", lw=1.5, color="lightblue", label="ZDust x jet")
-    ax.plot(ene_hz, abs_flux_mjy * ene_hz / 1e26,
-            ls=":",  lw=1.5, color="black",     label="Nh_Gal x Nh_src x jet")
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.legend(ncol=2, fontsize=8)
-
-    return fig, ax
-
 def hz_plot_model_space_sed(
     data_dict,
     model_components,
@@ -456,8 +386,6 @@ def hz_plot_model_space_sed(
     """
      SED creator which makes individual YAML sed_components per dataset
 
-    Parameters
-    ----------
     data_dict : dict
         dataset name -> XYLike plugin (or any plugin hz_plot_xylike_data)
     model_components : dict
