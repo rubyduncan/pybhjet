@@ -1,6 +1,6 @@
 import numpy as np
 from astromodels.functions.function import ModelAssertionViolation
-
+import time 
 import astropy.units as u
 from astromodels.functions.function import (
     Function1D,
@@ -185,6 +185,10 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
         self._cached_E_keV    = None
         self._cached_flux_ph  = None
 
+        self._eval_calls = 0
+        self._run_calls = 0
+        self._t_run = 0.0
+
         #code switches: 
         self.bhjet.cutoff_type = int(self.cutoff_type)
 
@@ -258,7 +262,7 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
         """
         Map the 3ML parameters to Pybhjet, run the model, and return the interpolated output 
         """
-
+        self._eval_calls += 1 
         # only if params changed, call BHJet - this helps a lot with computation time per dataset
         if self._cached_params is None or params_vec != self._cached_params:
 
@@ -293,7 +297,12 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
             self.bhjet.set_parameter("EBLsw", EBLsw)
             
             self.bhjet.cutoff_type = int(self.cutoff_type)
+
+            self._eval_calls += 1
+            t0 = time.perf_counter()
+            self._run_calls += 1
             self.bhjet.run()
+            self._t_run += time.perf_counter() - t0
 
             out = self.bhjet.get_output() #returning linear arrays for freq, flux 
 

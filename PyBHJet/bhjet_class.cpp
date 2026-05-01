@@ -113,13 +113,11 @@ void BhJetClass::print_parameters() const {
     std::cout << "BHJet Parameters:" << std::endl;
     std::cout << "-----------------" << std::endl;
 
-    // Determine the maximum width for parameter names
     size_t max_name_length = 0;
     for (const auto& pair : param_units) {
         max_name_length = std::max(max_name_length, pair.first.length());
     }
 
-    // Print the parameters with alignment
     for (const auto& pair : param_units) {
         const auto& name = pair.first;
         const auto& unit = pair.second;
@@ -127,7 +125,7 @@ void BhJetClass::print_parameters() const {
         if (it != param_name_to_index.end()) {
             size_t index = it->second;
 
-            // Align the parameter name and value
+            // Align the parameter name and value for nice printing 
             std::cout << std::left << std::setw(max_name_length + 2) << name
                       << ": " << std::setw(12) << std::left << params[index]
                       << unit << std::endl;
@@ -213,8 +211,8 @@ void BhJetClass::run() {
     //this is what was used in the bhwrap file for running bhjet alone ---- 
     int npar = 28;
     int ne = 201;
-    double emin	= -9;
-    double emax	= 3;
+    double emin	= -11;
+    double emax	= 10;
     double einc	= (emax-emin)/ne;
 
     auto ebins = std::make_unique<double[]>(ne); //energy bins 

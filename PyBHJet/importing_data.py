@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 import numpy as np
 import yaml 
-
+from pathlib import Path
 from unit_conversion import *
 
 
@@ -98,6 +98,4 @@ def combine_dataframes(directory_path, file_extension, columns=None):
         uv_df = pd.DataFrame(columns=["x", "y", "yerr"])
 
     return radio_df, ir_df, uv_df
-
-
 

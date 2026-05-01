@@ -31,7 +31,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/pybhjet.dir/python_interface.cpp.o.d"
   "CMakeFiles/pybhjet.dir/utils.cpp.o"
   "CMakeFiles/pybhjet.dir/utils.cpp.o.d"
-  "pybhjet.cpython-39-darwin.so"
+  "pybhjet.cpython-39-x86_64-linux-gnu.so"
   "pybhjet.pdb"
 )
 
