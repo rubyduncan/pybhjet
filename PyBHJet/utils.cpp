@@ -21,8 +21,8 @@ bool Compton_check(bool IsShock,int i,double Mbh,double Nj,double Urad,double ve
     bool test2 = (Lcom >= Nj*1e-8);
 
     if (Mbh > 1.e4 && zone.delta < 5){
-        test1 = (Lcom/Lsyn > 1e-5); 
-        test2 = (Lcom >= Nj*1e-10);
+        test1 = (Lcom/Lsyn > 1e-4); 
+        test2 = (Lcom >= Nj*1e-9);
     }
 
     //the logic for these tests is as follows: 

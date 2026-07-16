@@ -1,6 +1,7 @@
 #include "bhjet_class.hh"
 #include "jetmain.hh"
 
+#include <pybind11/numpy.h>
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -12,6 +13,7 @@
 #include <memory>
 
 using namespace std;
+namespace py = pybind11;
 
 BhJetClass::BhJetClass() : params(28, 0.0) {
     //initializing a vector with 28 elements 
@@ -187,6 +189,14 @@ void BhJetClass::set_parameter(const std::string& name, double value) {
     }
 }
 
+void BhJetClass::set_parameters(const std::vector<double>& new_params) {
+    if (new_params.size() != params.size()) {
+        throw std::invalid_argument("Expected " + std::to_string(params.size()) + " parameters");
+    }
+    params = new_params;
+    update_internal_parameters();
+}
+
 std::vector<std::string> BhJetClass::get_parameter_names() const {
     std::vector<std::string> names;
     names.reserve(param_name_to_index.size());
@@ -250,4 +260,22 @@ void BhJetClass::run_singlezone(){
     singlezone_jetmain(*this,output); 
 }
 
+py::tuple BhJetClass::get_total_arrays() {
 
+    auto out = get_output();
+
+    size_t n = out.total.size();
+
+    py::array_t<double> energy(n);
+    py::array_t<double> flux(n);
+
+    auto e = energy.mutable_unchecked<1>();
+    auto f = flux.mutable_unchecked<1>();
+
+    for (size_t i = 0; i < n; ++i) {
+        e(i) = out.total[i].energy;
+        f(i) = out.total[i].flux;
+    }
+
+    return py::make_tuple(energy, flux);
+}

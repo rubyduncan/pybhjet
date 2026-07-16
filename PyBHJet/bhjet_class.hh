@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <pybind11/pybind11.h>
 
 class BhJetClass {
 public:
@@ -19,10 +20,12 @@ public:
     //Accessing parameters by name in python 
     double get_parameter(const std::string& name) const;
     void set_parameter(const std::string& name, double value);
+    void set_parameters(const std::vector<double>& new_params);
 
     int cutoff_type = 0;
     int get_cutoff_type() const {return cutoff_type; }
     void set_cutoff_type(int t) {cutoff_type = t; }
+    pybind11::tuple get_total_arrays();
 
     // expose parameter names to Python
     std::vector<std::string> get_parameter_names() const;

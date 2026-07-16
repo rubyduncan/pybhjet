@@ -136,28 +136,44 @@ def preprocess_jet_profile(output, include_descriptions=False):
 
 def preprocess_jet_zone_properties(output, include_descriptions=False):
     """
-    Extract jet zone properties into a dictionary and optionally include descriptions.
-    
-    Args:
-        output: The output object from the jet model.
-        include_descriptions (bool): If True, print a description of all properties.
-        
-    Returns:
-        Dictionary of jet zone properties.
+    extracting  jet zone properties into a dictionary and optionally include descriptions.
+    output: The output object from the jet model.
+    include_descriptions (bool): If True, print a description of all properties.
+    returns -> dict of jet zone properties
     """
+
+    # jet_bfield = np.array(output.jet_zone_properties.jet_bfield)
+    # lepton_ndens =  np.array(output.jet_zone_properties.lepton_ndens)
+    # speed_gamma =  np.array(output.jet_zone_properties.speed_gamma)
+    # delta = np.array(output.jet_zone_properties.delta)
+    # tshift = np.array(output.jet_zone_properties.tshift)
+    # temp_kev = np.array(output.jet_zone_properties.temp_kev)
+    # grid_r = np.array(output.jet_zone_properties.grid_r)
+    # delz = np.array(output.jet_zone_properties.delz)
+    # dist_z = np.array(output.jet_zone_properties.dist_z)
+    # z_delz = np.array(output.jet_zone_properties.z_delz)
+    # equpar_check = np.array(output.jet_zone_properties.equpar_check)
+    # ue_ub = np.array(output.jet_zone_properties.ue_ub)
+
+    # jet_zone_properties = pd.DataFrame({"jet_bfield": jet_bfield, "lepton_ndens": lepton_ndens, 
+    #                                    "speed_gamma": speed_gamma, "delta": delta, "tshift": tshift, 
+    #                                    "temp_kev": temp_kev, "grid_r": grid_r, "delz": delz, "dist_z": dist_z, 
+    #                                    "z_delz": z_delz, "equpar_check": equpar_check, "ue_ub": ue_ub,
+    #                                 })
+
     jet_zone_properties = {
-        "jet_bfield": np.array(output.jet_zone_properties.jet_bfield),
-        "lepton_ndens": np.array(output.jet_zone_properties.lepton_ndens),
-        "speed_gamma": np.array(output.jet_zone_properties.speed_gamma),
-        "delta": np.array(output.jet_zone_properties.delta),
-        "tshift": np.array(output.jet_zone_properties.tshift),
-        "temp_kev": np.array(output.jet_zone_properties.temp_kev),
-        "grid_r": np.array(output.jet_zone_properties.grid_r),
-        "delz": np.array(output.jet_zone_properties.delz),
-        "dist_z": np.array(output.jet_zone_properties.dist_z),
-        "z_delz": np.array(output.jet_zone_properties.z_delz),
-        "equpar_check": np.array(output.jet_zone_properties.equpar_check),
-        "ue_ub": np.array(output.jet_zone_properties.ue_ub),
+        "jet_bfield": np.asarray(output.jet_zone_properties.jet_bfield).ravel(),
+        "lepton_ndens": np.asarray(output.jet_zone_properties.lepton_ndens).ravel(),
+        "speed_gamma": np.asarray(output.jet_zone_properties.speed_gamma).ravel(),
+        "delta": np.asarray(output.jet_zone_properties.delta).ravel(),
+        "tshift": np.asarray(output.jet_zone_properties.tshift).ravel(),
+        "temp_kev": np.asarray(output.jet_zone_properties.temp_kev).ravel(),
+        "grid_r": np.asarray(output.jet_zone_properties.grid_r).ravel(),
+        "delz": np.asarray(output.jet_zone_properties.delz).ravel(),
+        "dist_z": np.asarray(output.jet_zone_properties.dist_z).ravel(),
+        "z_delz": np.asarray(output.jet_zone_properties.z_delz).ravel(),
+        "equpar_check": np.asarray(output.jet_zone_properties.equpar_check).ravel(),
+        "ue_ub": np.asarray(output.jet_zone_properties.ue_ub).ravel(),
     }
     
     if include_descriptions:
@@ -319,68 +335,3 @@ def plot_flux_mjy(data, output_path=None, title=None):
 
     if output_path:
         plt.savefig(output_path, dpi = 300)
-
-
-
-# def plot_radiative_zones_style_with_sizes(output, colors, size_cyclo_arr, size_com_arr,
-#                                           kevconv=1.0, mjy=1e-26, fluxconv=1.0,
-#                                           blim_f=1e8, ulim_f=1e26, blim_fl=1e-6, ulim_fl=1e2):
-#     """
-#     Plot radiative zone spectra using provided size arrays and color gradient.
-#     """
-#     nzones = 100
-
-#     cyclosyn = output.cyclosyn_zones
-#     compton = output.compton_zones
-
-#     fig, ax1 = plt.subplots(1, 1, figsize=(7.5, 6))
-
-#     totindex1 = 0
-#     totindex2 = 0
-
-#     for i in range(nzones):
-#         n_cyclo = int(size_cyclo_arr[i])
-#         n_com = int(size_com_arr[i])
-
-#         if n_cyclo > 0:
-#             nu_cyclosyn = np.array([cyclosyn[totindex1 + j].energy / kevconv for j in range(n_cyclo)])
-#             lnu_cyclosyn = np.array([cyclosyn[totindex1 + j].flux * cyclosyn[totindex1 + j].energy * mjy * kevconv
-#                                      for j in range(n_cyclo)])
-#             totindex1 += n_cyclo
-#         else:
-#             nu_cyclosyn = lnu_cyclosyn = []
-
-#         if n_com > 0:
-#             nu_compton = np.array([compton[totindex2 + j].energy / kevconv for j in range(n_com)])
-#             lnu_compton = np.array([compton[totindex2 + j].flux * compton[totindex2 + j].energy * mjy * kevconv
-#                                     for j in range(n_com)])
-#             totindex2 += n_com
-#         else:
-#             nu_compton = lnu_compton = []
-
-#         # Plot every 3rd zone, or whatever 
-#         if i % 3 == 0 and (n_cyclo > 0 or n_com > 0):
-#             zorder = nzones - i
-#             if len(nu_cyclosyn):
-#                 ax1.plot(nu_cyclosyn, lnu_cyclosyn * fluxconv,
-#                          linewidth=2.0, color=colors[i], zorder=zorder, linestyle='--')
-#             if len(nu_compton):
-#                 ax1.plot(nu_compton, lnu_compton * fluxconv,
-#                          linewidth=2.0, color=colors[i], zorder=zorder, linestyle='--')
-
-#     # Plot total spectrum if available
-#     total = output.total
-#     total_nu = np.array([pt.energy / kevconv for pt in total])
-#     total_flux = np.array([pt.flux * pt.energy * mjy * fluxconv for pt in total])
-#     ax1.plot(total_nu, total_flux, linewidth=2.5, color='black', zorder=nzones + 1)
-
-#     # Axis and scale settings
-#     ax1.set_ylim([0.001 * blim_fl * fluxconv, 0.1 * ulim_fl * fluxconv])
-#     ax1.set_xlim([blim_f / kevconv, ulim_f / kevconv])
-#     ax1.set_xscale('log', base=10)
-#     ax1.set_yscale('log', base=10)
-
-#     ax1.set_xlabel('Energy (keV)' if kevconv != 1 else 'Frequency (Hz)', fontsize=18)
-#     ax1.set_ylabel('Luminosity (erg/s)' if fluxconv != 1 else 'Flux (erg/s/cm²)', fontsize=18)
-
-#     plt.tight_layout()

@@ -112,9 +112,30 @@ CMakeFiles/pybhjet.dir/utils.cpp.o: \
  /usr/include/c++/8/bits/invoke.h /usr/include/c++/8/bits/node_handle.h \
  /usr/include/c++/8/optional \
  /usr/include/c++/8/bits/enable_special_members.h \
- /usr/include/c++/8/bits/unordered_map.h /usr/include/c++/8/cmath \
- /usr/include/math.h /usr/include/bits/math-vector.h \
- /usr/include/bits/libm-simd-decl-stubs.h \
+ /usr/include/c++/8/bits/unordered_map.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/pybind11.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/class.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/attr.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/common.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/conduit/wrap_include_python_h.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/Python.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/patchlevel.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyconfig.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pymacconfig.h \
+ /usr/lib/gcc/x86_64-redhat-linux/8/include/limits.h \
+ /usr/lib/gcc/x86_64-redhat-linux/8/include/syslimits.h \
+ /usr/include/limits.h /usr/include/bits/posix1_lim.h \
+ /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
+ /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
+ /usr/include/bits/uio_lim.h /usr/include/string.h /usr/include/strings.h \
+ /usr/include/c++/8/stdlib.h /usr/include/unistd.h \
+ /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
+ /usr/include/bits/confname.h /usr/include/bits/getopt_posix.h \
+ /usr/include/bits/getopt_core.h /usr/include/assert.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyport.h \
+ /usr/include/inttypes.h /usr/include/c++/8/math.h \
+ /usr/include/c++/8/cmath /usr/include/math.h \
+ /usr/include/bits/math-vector.h /usr/include/bits/libm-simd-decl-stubs.h \
  /usr/include/bits/flt-eval-method.h /usr/include/bits/fp-logb.h \
  /usr/include/bits/fp-fast.h \
  /usr/include/bits/mathcalls-helper-functions.h \
@@ -132,8 +153,135 @@ CMakeFiles/pybhjet.dir/utils.cpp.o: \
  /usr/include/c++/8/tr1/modified_bessel_func.tcc \
  /usr/include/c++/8/tr1/poly_hermite.tcc \
  /usr/include/c++/8/tr1/poly_laguerre.tcc \
- /usr/include/c++/8/tr1/riemann_zeta.tcc /usr/include/c++/8/ctime \
- /usr/include/c++/8/iostream /usr/include/c++/8/ostream \
+ /usr/include/c++/8/tr1/riemann_zeta.tcc /usr/include/sys/time.h \
+ /usr/include/sys/stat.h /usr/include/bits/stat.h \
+ /usr/include/bits/statx.h /usr/include/linux/stat.h \
+ /usr/include/linux/types.h /usr/include/asm/types.h \
+ /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
+ /usr/include/asm/bitsperlong.h /usr/include/asm-generic/bitsperlong.h \
+ /usr/include/linux/posix_types.h /usr/include/linux/stddef.h \
+ /usr/include/asm/posix_types.h /usr/include/asm/posix_types_64.h \
+ /usr/include/asm-generic/posix_types.h /usr/include/bits/statx-generic.h \
+ /usr/include/bits/types/struct_statx_timestamp.h \
+ /usr/include/bits/types/struct_statx.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/exports.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pymacro.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pymath.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pytime.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/object.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/object.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pymem.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/pymem.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/objimpl.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/objimpl.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/typeslots.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyhash.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pydebug.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/bytearrayobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/bytearrayobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/bytesobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/bytesobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/unicodeobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/unicodeobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/longobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/longintrepr.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/boolobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/floatobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/complexobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/rangeobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/memoryobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/tupleobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/tupleobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/listobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/listobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/dictobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/dictobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/odictobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/enumobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/setobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/methodobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/methodobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/moduleobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/funcobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/classobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/fileobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/fileobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pycapsule.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/code.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/code.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyframe.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/traceback.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/traceback.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/sliceobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cellobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/iterobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/initconfig.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/genobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pystate.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/pystate.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/descrobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/genericaliasobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/warnings.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/weakrefobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/structseq.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/namespaceobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/picklebufobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/codecs.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyerrors.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/pyerrors.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pythread.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/context.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyarena.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/modsupport.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/compile.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pythonrun.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pylifecycle.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/pylifecycle.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/ceval.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/ceval.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/sysmodule.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/sysmodule.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/osmodule.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/intrcheck.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/import.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/import.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/abstract.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/abstract.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/bltinmodule.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/eval.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyctype.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pystrtod.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pystrcmp.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/fileutils.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/fileutils.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pyfpe.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/tracemalloc.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/frameobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/cpython/frameobject.h \
+ /zfs/helios/filer0/sw-astro/api/isis/python3918/include/python3.9/pythread.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/pybind11_namespace_macros.h \
+ /usr/include/c++/8/cstddef /usr/include/c++/8/cstring \
+ /usr/include/c++/8/forward_list /usr/include/c++/8/bits/forward_list.h \
+ /usr/include/c++/8/bits/forward_list.tcc /usr/include/c++/8/memory \
+ /usr/include/c++/8/bits/stl_tempbuf.h \
+ /usr/include/c++/8/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/8/ext/concurrence.h \
+ /usr/include/c++/8/bits/unique_ptr.h \
+ /usr/include/c++/8/bits/shared_ptr.h \
+ /usr/include/c++/8/bits/shared_ptr_base.h \
+ /usr/include/c++/8/bits/allocated_ptr.h \
+ /usr/include/c++/8/bits/refwrap.h \
+ /usr/include/c++/8/bits/shared_ptr_atomic.h \
+ /usr/include/c++/8/bits/atomic_base.h \
+ /usr/include/c++/8/bits/atomic_lockfree_defines.h \
+ /usr/include/c++/8/backward/auto_ptr.h /usr/include/c++/8/typeindex \
+ /usr/include/c++/8/unordered_set /usr/include/c++/8/bits/unordered_set.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/cast.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/descr.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/native_enum_data.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/pytypes.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/buffer_info.h \
+ /usr/include/c++/8/iterator /usr/include/c++/8/ostream \
  /usr/include/c++/8/ios /usr/include/c++/8/bits/ios_base.h \
  /usr/include/c++/8/bits/locale_classes.h \
  /usr/include/c++/8/bits/locale_classes.tcc \
@@ -149,36 +297,59 @@ CMakeFiles/pybhjet.dir/utils.cpp.o: \
  /usr/include/c++/8/bits/locale_facets.tcc \
  /usr/include/c++/8/bits/basic_ios.tcc \
  /usr/include/c++/8/bits/ostream.tcc /usr/include/c++/8/istream \
- /usr/include/c++/8/bits/istream.tcc /usr/include/c++/8/iomanip \
+ /usr/include/c++/8/bits/istream.tcc \
+ /usr/include/c++/8/bits/stream_iterator.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/internals.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/conduit/pybind11_platform_abi_id.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/gil_simple.h \
+ /usr/include/c++/8/cassert \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/trampoline_self_life_support.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/using_smart_holder.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/struct_smart_holder.h \
+ /usr/include/c++/8/functional /usr/include/c++/8/bits/std_function.h \
+ /usr/include/c++/8/bits/stl_algo.h \
+ /usr/include/c++/8/bits/algorithmfwd.h \
+ /usr/include/c++/8/bits/stl_heap.h \
+ /usr/include/c++/8/bits/uniform_int_dist.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/value_and_holder.h \
+ /usr/include/c++/8/atomic /usr/include/c++/8/mutex \
+ /usr/include/c++/8/chrono /usr/include/c++/8/ratio \
+ /usr/include/c++/8/ctime /usr/include/c++/8/bits/parse_numbers.h \
+ /usr/include/c++/8/bits/std_mutex.h /usr/include/c++/8/thread \
+ /usr/include/c++/8/sstream /usr/include/c++/8/bits/sstream.tcc \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/type_caster_base.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/gil.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/cpp_conduit.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/dynamic_raw_ptr_cast_if_possible.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/typeid.h \
+ /usr/include/c++/8/cxxabi.h \
+ /usr/include/c++/8/x86_64-redhat-linux/bits/cxxabi_tweaks.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/options.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/exception_translation.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/function_record_pyobject.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/detail/init.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/gil_safe_call_once.h \
+ /home/rduncan/threeml_env/lib/python3.9/site-packages/pybind11/include/pybind11/typing.h \
+ /usr/include/c++/8/algorithm /usr/include/c++/8/stack \
+ /usr/include/c++/8/deque /usr/include/c++/8/bits/stl_deque.h \
+ /usr/include/c++/8/bits/deque.tcc /usr/include/c++/8/bits/stl_stack.h \
+ /usr/include/c++/8/iostream /usr/include/c++/8/iomanip \
  /usr/include/c++/8/locale /usr/include/c++/8/bits/locale_facets_nonio.h \
  /usr/include/c++/8/x86_64-redhat-linux/bits/time_members.h \
  /usr/include/c++/8/x86_64-redhat-linux/bits/messages_members.h \
  /usr/include/libintl.h /usr/include/c++/8/bits/codecvt.h \
  /usr/include/c++/8/bits/locale_facets_nonio.tcc \
  /usr/include/c++/8/bits/locale_conv.h \
- /usr/include/c++/8/bits/unique_ptr.h \
- /usr/include/c++/8/bits/quoted_string.h /usr/include/c++/8/sstream \
- /usr/include/c++/8/bits/sstream.tcc /usr/include/c++/8/algorithm \
- /usr/include/c++/8/bits/stl_algo.h \
- /usr/include/c++/8/bits/algorithmfwd.h \
- /usr/include/c++/8/bits/stl_heap.h /usr/include/c++/8/bits/stl_tempbuf.h \
- /usr/include/c++/8/bits/uniform_int_dist.h /usr/include/c++/8/fstream \
+ /usr/include/c++/8/bits/quoted_string.h /usr/include/c++/8/fstream \
  /usr/include/c++/8/x86_64-redhat-linux/bits/basic_file.h \
  /usr/include/c++/8/x86_64-redhat-linux/bits/c++io.h \
  /usr/include/c++/8/bits/fstream.tcc /usr/include/c++/8/fenv.h \
  /usr/include/fenv.h /usr/include/bits/fenv.h \
- /usr/include/gsl/gsl_spline.h /usr/include/c++/8/stdlib.h \
- /usr/include/gsl/gsl_interp.h /usr/include/gsl/gsl_inline.h \
- /usr/include/gsl/gsl_types.h /usr/include/gsl/gsl_const_cgsm.h \
- /usr/include/gsl/gsl_const_num.h /usr/include/gsl/gsl_math.h \
- /usr/include/c++/8/math.h /usr/include/gsl/gsl_sys.h \
+ /usr/include/gsl/gsl_spline.h /usr/include/gsl/gsl_interp.h \
+ /usr/include/gsl/gsl_inline.h /usr/include/gsl/gsl_types.h \
+ /usr/include/gsl/gsl_const_cgsm.h /usr/include/gsl/gsl_const_num.h \
+ /usr/include/gsl/gsl_math.h /usr/include/gsl/gsl_sys.h \
  /usr/include/gsl/gsl_machine.h \
- /usr/lib/gcc/x86_64-redhat-linux/8/include/limits.h \
- /usr/lib/gcc/x86_64-redhat-linux/8/include/syslimits.h \
- /usr/include/limits.h /usr/include/bits/posix1_lim.h \
- /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
- /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
- /usr/include/bits/uio_lim.h \
  /usr/lib/gcc/x86_64-redhat-linux/8/include/float.h \
  /usr/include/gsl/gsl_precision.h /usr/include/gsl/gsl_nan.h \
  /usr/include/gsl/gsl_pow_int.h /usr/include/gsl/gsl_minmax.h \

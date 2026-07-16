@@ -109,10 +109,12 @@ PYBIND11_MODULE(pybhjet, m){
         .def("print_parameters", &BhJetClass::print_parameters, "Print all parameters with units.")
         .def("run", &BhJetClass::run, "Run the BHJet model.")
         .def("run_singlezone", &BhJetClass::run_singlezone, "Run the BHJet Single Zone model.")
+        .def("get_total_arrays",&BhJetClass::get_total_arrays,"Return total spectrum as numpy arrays.")
         .def("get_output", &BhJetClass::get_output, py::return_value_policy::reference, "Retrieve the output from the run.")
         // Expose generic parameter getter and setter
         .def("get_parameter", &BhJetClass::get_parameter, "Get the value of a parameter by name.")
         .def("set_parameter", &BhJetClass::set_parameter, "Set the value of a parameter by name.")
+        .def("set_parameters", &BhJetClass::set_parameters, "Set all parameters at once.")
         .def("get_parameter_names", &BhJetClass::get_parameter_names, "Get the names of all parameters.")
         // Implement __getitem__ and __setitem__ for dictionary-like access
         .def("__getitem__", &BhJetClass::get_parameter, "Get the value of a parameter by name.")

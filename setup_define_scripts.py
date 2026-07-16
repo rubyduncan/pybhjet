@@ -8,6 +8,8 @@ from threeML import XYLike, OGIPLike
 from threeML.utils.OGIP.response import OGIPResponse
 from threeML import *
 import sys
+import hashlib
+from collections import OrderedDict
 sys.path.append("PyBHJet/")
 from pybhjet_3ml import BHJetModel
 from pathlib import Path
@@ -22,6 +24,7 @@ TOTAL_MODEL_LIB = {
     "TbAbs": TbAbs,
     "ZDust": ZDust,
     "zpcfabs": XS_zpcfabs,
+    "zphabs": XS_zphabs,
     "zxipcf": XS_zxipcf,  
     "pexmon": XS_pexmon, 
     "apec": XS_apec,
@@ -44,7 +47,6 @@ def load_full_detailed_yaml_as_xylike(base_dir, comp):
 
     with open(yaml_path) as f:
         dat = yaml.safe_load(f)
-
     data_dict = {}
     grouped_data = {
         "rad": dat.get("radio", []) + dat.get("submm", []),
@@ -126,7 +128,8 @@ def load_data_from_yaml(path_to_data_yaml_file):
 def load_params_priors_from_yaml(func, cfg_block): 
 
     for name, spec in cfg_block.items():
-         #fixed parmeters don't have everything defined for them
+
+        #fixed parmeters don't have everything defined for them
         if not hasattr(func, name):
             continue
 
@@ -140,7 +143,7 @@ def load_params_priors_from_yaml(func, cfg_block):
         # value 
         if "value" in spec:
             p.value = spec["value"]
-
+           
         # free / fixed
         if "free" in spec:
             p.free = bool(spec["free"])
@@ -166,11 +169,25 @@ def load_params_priors_from_yaml(func, cfg_block):
                     sigma=prior_cfg["sigma"],
                 )
             elif ptype == 'truncated_gaussian':
+                lower = prior_cfg.get("min", prior_cfg.get("lower_bound", p.min_value))
+                upper = prior_cfg.get("max", prior_cfg.get("upper_bound", p.max_value))
+
                 p.prior = Truncated_gaussian(
                 mu=prior_cfg["mu"],
                 sigma=prior_cfg["sigma"],
-                lower_bound=prior_cfg.get("min", p.min_value),
-                upper_bound=prior_cfg.get("max", p.max_value),
+                lower_bound=lower,
+                upper_bound=upper,
+                )
+            elif ptype == 'log_normal':
+                mu_lin = prior_cfg['mu']
+                if mu_lin <= 0:
+                    raise ValueError(f"{name}: log_normal prior requires mu > 0 in linear space, got {mu_lin}")
+            
+                p.prior = Log_normal(
+                F=1.0,
+                mu=np.log(prior_cfg["mu"]),
+                sigma=prior_cfg["sigma"],
+                piv=prior_cfg.get("piv", 1.0),
                 )
 
 def build_components_from_yaml(MODEL_SETUP, path_to_model_yaml):
@@ -195,7 +212,6 @@ def build_components_from_yaml(MODEL_SETUP, path_to_model_yaml):
         model_components[logical_name] = obj
 
     return model_components, yaml_dict
-
 
 
 def link_params(model_obj, model_components, driver: str, dependent: str, freeze_dependent: bool = True):
@@ -321,6 +337,10 @@ def build_model_and_data_from_yaml(path_to_data_yaml_file, path_to_model_yaml_fi
 
     # 2. components (jet, gal_ext, intr_ext, dust_ext) with params/prior applied
     model_components, model_yaml_dict = build_components_from_yaml(MODEL_SETUP, path_to_model_yaml_file)
+    apply_jet_config(model_components, model_yaml_dict) ## this controls the switches in bhjet 
+    apply_component_caching(model_components, model_yaml_dict) #this helps with the xspec models and how they are evaluated
+
+
 
     # 3. spectra (radio, iruv, xray) from yaml model.spectra
     spectra_cfg = model_yaml_dict["model"]["spectra"]
@@ -503,6 +523,47 @@ def hz_plot_xylike_data(xy, ax=None, label=None, color_data="k", color_model="r"
     return fig, ax
 
 
+def lum_plot_xylike_data(model_components, xy, ax=None, label=None, color_data="k"):
+
+    '''this takes the loaded "xylike" data for threeml and plots it, using my conversion.py notebook
+    '''
+
+    jet = model_components["jet"]
+    dist_kpc = jet.dist.value 
+
+    fluxconv = 4.0 * np.pi * (dist_kpc * 3.085677581e21) ** 2
+    mjy_to_cgs = 1e-26
+    
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+
+    x = np.asarray(xy.x)
+    y = np.asarray(xy.y)
+    yerr = np.asarray(xy.yerr) if xy.has_errors else None
+
+    x_hz = kev_to_hz(x)
+    y_mjy = photon_flux_density_to_mjy(y, x)
+    y_err_mjy = photon_flux_density_to_mjy(yerr, x)
+
+    # data
+    Lnu = y_mjy * mjy_to_cgs * fluxconv
+    Lnu_err = y_err_mjy * mjy_to_cgs * fluxconv
+
+    if y_err_mjy is not None:
+        ax.errorbar(x_hz, x_hz*Lnu, yerr=Lnu_err*x_hz, fmt="o", ms=4, lw=1,
+                    color=color_data)
+        
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+
+    return fig, ax
+
+
+ 
 def plot_ogip_with_model(*ogips, model_obj, fig=None, model_labels=None):
 
     if len(ogips) == 1 and isinstance(ogips[0], (list, tuple)):
@@ -532,9 +593,10 @@ def hz_plot_model_space_sed(
     data_dict,
     model_components,
     sed_components_expr,
+    xray_path=None,
     data_keys=("rad", "ir", "uv"),
     e_min_keV=1e-9,
-    e_max_keV=1e3,
+    e_max_keV=1e4,
     n_points=1000,
     data_colors=("red", "orange", "gold"),
     model_lw=1.5,
@@ -560,14 +622,32 @@ def hz_plot_model_space_sed(
         if k in data_dict:
             hz_plot_xylike_data(data_dict[k], ax=ax, color_data=c, color_model=c)
 
+
+    if xray_path is not None:
+        add_xray_to_ax_nu_f_nu(
+            ax,
+            xray_path,
+            model_components,
+            lum=False,
+            color = 'black'
+        )
+
     ene = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), n_points)
     ene_hz = kev_to_hz(ene)
 
     for name, expr in sed_components_expr.items():
         model = build_spectrum(expr, model_components)
-        flux = model(ene)
-        flux_mjy = photon_flux_density_to_mjy(flux, ene)
-        ax.plot(ene_hz, flux_mjy * ene_hz / 1e26, lw=model_lw, label=name)
+
+        if "zpcfabs" in expr or "gal_ext" in expr or "pexmon" in expr:
+            ene_use = np.logspace(np.log10(0.1), np.log10(300.0), n_points)
+        else:
+            ene_use = ene
+
+        ene_hz_use = kev_to_hz(ene_use)
+        ph_flux = model(ene_use)
+        fnu_mjy = photon_flux_density_to_mjy(ph_flux, ene_use)
+
+        ax.plot(ene_hz_use, fnu_mjy*ene_hz_use/1e26, lw=model_lw, label=name)
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -575,10 +655,7 @@ def hz_plot_model_space_sed(
     return fig, ax
 
 
-def add_xray_to_ax(
-    ax,
-    path,
-    *,
+def add_xray_to_ax_nu_f_nu(ax,path,model_components,*,color,
     y_col=2,
     yerr_col=3,
     fmt="D",
@@ -586,9 +663,14 @@ def add_xray_to_ax(
     alpha=0.5,
     zorder=1,
     label=None,
-    color='C0',
+    lum = False,
     **errorbar_kwargs,
 ):
+    jet = model_components["jet"]
+    dist_kpc = jet.dist.value 
+
+    fluxconv = 4.0 * np.pi * (dist_kpc * 3.085677581e21) ** 2
+    mjy_to_cgs = 1e-26
 
     path = Path(path)
 
@@ -609,13 +691,23 @@ def add_xray_to_ax(
             f"Unexpected shape for {path}: got {data.shape}, need 2D with enough columns."
         )
 
-    # Geometric-mean frequency from bin edges (matches your previous code)
     freq = 10.0 ** ((np.log10(data[:, 0]) + np.log10(data[:, 1])) / 2.0)
 
-    handle = ax.errorbar(
+    if lum == True: 
+        
+        y = data[:, y_col]
+        yerr= data[:, yerr_col]
+
+        Lnu = y * fluxconv 
+        Lnu_err = yerr * fluxconv
+
+        nuLnu =  Lnu
+        nuLnu_err = Lnu_err 
+
+        handle = ax.errorbar(
         freq,
-        data[:, y_col],
-        yerr=data[:, yerr_col],
+        nuLnu,
+        yerr=nuLnu_err,
         fmt=fmt,
         color=color,
         markersize=markersize,
@@ -623,24 +715,42 @@ def add_xray_to_ax(
         zorder=zorder,
         label=label,
         **errorbar_kwargs,
-    )
+        )
+        
+    else:
+        y = data[:, y_col] 
+        y_err = data[:, yerr_col]
+
+        nuFnu = y
+        nuFnu_err = y_err
+        
+        handle = ax.errorbar(
+        freq,
+        nuFnu,
+        yerr=nuFnu_err,
+        fmt=fmt,
+        color=color,
+        markersize=markersize,
+        alpha=alpha,
+        zorder=zorder,
+        label=label,
+        **errorbar_kwargs,
+        ) 
     return handle
 
-def hz_plot_all_data_w_fake_xray(
+def hz_plot_all_data_w_fake_xray(ax,
     xray_path,
     data_dict,
     model_components,
     sed_components_expr,
     data_keys=("rad", "ir", "uv"),
     e_min_keV=1e-9,
-    e_max_keV=1e3,
+    e_max_keV=1e6,
     n_points=1000,
     data_colors=("red", "orange", "gold"),
     model_lw=1.5,
 ):
 
-
-    fig, ax = plt.subplots(figsize=(10, 6))
 
     for k, c in zip(data_keys, data_colors):
         if k in data_dict:
@@ -649,13 +759,44 @@ def hz_plot_all_data_w_fake_xray(
     ene = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), n_points)
     ene_hz = kev_to_hz(ene)
 
-    add_xray_to_ax(ax, xray_path)
+    add_xray_to_ax_nu_f_nu(ax, xray_path, model_components, lum = False, color = 'black')
+    
+
+
+def lum_plot_all_data_w_fake_xray(
+    xray_path,
+    data_dict,
+    model_components,
+    data_keys=("rad", "ir", "uv"),
+    e_min_keV=1e-9,
+    e_max_keV=1e6,
+    n_points=1000,
+    data_colors=("red", "orange", "gold"),
+    zorder = 10,
+    
+):
+
+    jet = model_components["jet"]
+    dist_kpc = jet.dist.value 
+
+    fluxconv = 4.0 * np.pi * (dist_kpc * 3.085677581e21) ** 2
+    mjy_to_cgs = 1e-26
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for k, c in zip(data_keys, data_colors):
+        if k in data_dict:
+            lum_plot_xylike_data(model_components, data_dict[k], ax=ax, color_data=c, zorder=zorder)
+
+    ene = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), n_points)
+    ene_hz = kev_to_hz(ene)
+
+    add_xray_to_ax_nu_f_nu(ax, xray_path, model_components, lum=True, color = 'black', zorder=zorder, alpha = 0.7)
 
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend(fontsize=8)
     return fig, ax
-
 
 def quick_eval(model, data_dict, verbose=True, reset_model=False):
     #this resets the plugin model state, so will invalidate the cache if True 
@@ -698,11 +839,10 @@ def hz_eval_and_plot_sed(model,data_dict, components, e_min_keV=1e-9,e_max_keV=1
     return fig, ax, stat_total, per_plugin_stats
 
 
-
 def add_bhjet_radiative_components_to_plot(model_components,ax,e_min_keV=1e-9,e_max_keV=1e3,plot_mode='jet',force_rerun=True,n_eval=2,):
     jet = model_components["jet"]
 
-    total_component = ['total', 'presyn']
+    total_component = ['total']
     jet_components_to_plot = ["presyn", "postsyn", "precom", "postcom"]
     all_components_to_plot = ["presyn", "postsyn", "precom", "postcom", "disk", "bb"]
 
@@ -761,6 +901,284 @@ def add_bhjet_radiative_components_to_plot(model_components,ax,e_min_keV=1e-9,e_
         nuSnu = nu_hz * (Snu_mjy * 1e-26)  # erg / (s cm^2)
         style = style_map.get(name, dict(color="gray", ls="--", lw=1.0, label=name))
         ax.plot(nu_hz, nuSnu, **style)
+
+    ax.legend(ncol=2, fontsize=8)
+    return ax
+
+
+def bhjet_luminosity_components_to_plot(
+    model_components,
+    ax,
+    total_color=None,
+    total_label=None,
+    e_min_keV=1e-9,
+    e_max_keV=1e3,
+    plot_mode="jet",
+    force_rerun=True,
+    n_eval=2,
+    style_map=None,
+    show_legend=True,
+):
+    jet = model_components["jet"]
+    dist_kpc = jet.dist.value
+
+    fluxconv = 4.0 * np.pi * (dist_kpc * 3.085677581e21) ** 2
+    mjy_to_cgs = 1e-26
+
+    total_component = ["total"]
+    jet_components_to_plot = [
+        "presyn",
+        "postsyn",
+        "precom",
+        "postcom",
+    ]
+    all_components_to_plot = [
+        "presyn",
+        "postsyn",
+        "precom",
+        "postcom",
+        "disk",
+        "bb",
+    ]
+
+    default_style_map = {
+        "total": dict(
+            color="black",
+            ls="-",
+            lw=1.5,
+            label="Total Jet Emission",
+        ),
+        "presyn": dict(
+            color="dodgerblue",
+            ls="-",
+            lw=1.5,
+            label=r"Syn, $z < z_{\rm diss}$",
+        ),
+        "postsyn": dict(
+            color="darkblue",
+            ls="--",
+            lw=1.5,
+            label=r"Syn, $z > z_{\rm diss}$",
+        ),
+        "precom": dict(
+            color="lightgreen",
+            ls="-",
+            lw=1.5,
+            label=r"IC, $z < z_{\rm diss}$",
+        ),
+        "postcom": dict(
+            color="green",
+            ls=":",
+            lw=1.5,
+            label=r"IC, $z > z_{\rm diss}$",
+        ),
+        "disk": dict(
+            color="red",
+            ls="-.",
+            lw=1.5,
+            label="Disk",
+        ),
+        "bb": dict(
+            color="orange",
+            ls="-.",
+            lw=1.5,
+            label="BB",
+        ),
+    }
+
+    if style_map is None:
+        style_map = {
+            name: style.copy()
+            for name, style in default_style_map.items()
+        }
+    else:
+        merged_style_map = {
+            name: style.copy()
+            for name, style in default_style_map.items()
+        }
+
+        for name, style in style_map.items():
+            if name in merged_style_map:
+                merged_style_map[name].update(style)
+            else:
+                merged_style_map[name] = style.copy()
+
+        style_map = merged_style_map
+
+    if total_color is not None:
+        style_map["total"]["color"] = total_color
+
+    if total_label is not None:
+        style_map["total"]["label"] = total_label
+
+    if plot_mode == "total":
+        plot_comp = total_component
+    elif plot_mode == "jet":
+        plot_comp = jet_components_to_plot
+    elif plot_mode == "all":
+        plot_comp = all_components_to_plot
+    else:
+        raise ValueError(
+            "plot_mode must be 'total', 'jet', or 'all'."
+        )
+
+    old_enable = getattr(jet, "enable_detailed_output", False)
+    old_infosw = jet.infosw.value
+
+    jet.enable_detailed_output = True
+    jet.infosw.value = 2
+
+    try:
+        if force_rerun:
+            jet._cached_params = None
+
+        E_eval = np.logspace(
+            np.log10(e_min_keV),
+            np.log10(e_max_keV),
+            max(int(n_eval), 2),
+        )
+
+        _ = jet(E_eval)
+        comps = jet._last_components
+
+    finally:
+        jet.enable_detailed_output = old_enable
+        jet.infosw.value = old_infosw
+
+    for name in plot_comp:
+        if name not in comps:
+            continue
+
+        nu_hz = np.asarray(
+            comps[name]["energy"],
+            dtype=float,
+        )
+        Snu_mjy = np.asarray(
+            comps[name]["flux"],
+            dtype=float,
+        )
+
+        m = (
+            np.isfinite(nu_hz)
+            & np.isfinite(Snu_mjy)
+            & (nu_hz > 0)
+            & (Snu_mjy > 0)
+        )
+
+        nu_hz = nu_hz[m]
+        Snu_mjy = Snu_mjy[m]
+
+        if nu_hz.size < 2:
+            continue
+
+        order = np.argsort(nu_hz)
+        nu_hz = nu_hz[order]
+        Snu_mjy = Snu_mjy[order]
+
+        Lnu = Snu_mjy * mjy_to_cgs * fluxconv
+        nuLnu = nu_hz * Lnu
+
+        style = style_map.get(
+            name,
+            dict(
+                color="gray",
+                ls="--",
+                lw=1.0,
+                label=name,
+            ),
+        )
+
+        ax.plot(
+            nu_hz,
+            nuLnu,
+            zorder=200,
+            **style,
+        )
+
+    if show_legend:
+        ax.legend(
+            ncol=2,
+            fontsize=8,
+            frameon=False,
+        )
+
+    return ax
+
+
+def old_bhjet_luminosity_components_to_plot(model_components,ax,total_color=None,total_label=None,e_min_keV=1e-9,e_max_keV=1e3,plot_mode='jet',force_rerun=True,n_eval=2, style_map=None,):
+    jet = model_components["jet"]
+    dist_kpc = jet.dist.value 
+
+    fluxconv = 4.0 * np.pi * (dist_kpc * 3.085677581e21) ** 2
+    mjy_to_cgs = 1e-26
+
+    total_component = ['total']
+    jet_components_to_plot = ["presyn", "postsyn", "precom", "postcom"]
+    all_components_to_plot = ["presyn", "postsyn", "precom", "postcom", "disk", "bb"]
+
+    style_map = {
+        # "total" :  dict(color="black", ls="-",  lw=1.5, label="Total Jet Emission"),
+        "total" :  dict(color="black", ls="-",  lw=1.5, label="Total Jet Emission"),
+        "presyn":  dict(color="dodgerblue", ls="-",  lw=1.5, label="Syn, z < z_diss"),
+        "postsyn": dict(color="darkblue",   ls="--", lw=1.5, label="Syn, z > z_diss"),
+        "precom":  dict(color="lightgreen", ls="-",  lw=1.5, label="IC,  z < z_diss"),
+        "postcom": dict(color="green",      ls=":",  lw=1.5, label="IC,  z > z_diss"),
+        "disk":    dict(color="red",        ls="-.", lw=1.5, label="Disk"),
+        "bb":      dict(color="orange",     ls="-.", lw=1.5, label="BB"),
+    }
+
+    if total_color is not None:
+        style_map["total"]["color"] = total_color
+
+    if total_label is not None:
+        style_map["total"]["label"] = total_label
+
+    if plot_mode == "total":
+        plot_comp = total_component
+    elif plot_mode == "jet":
+        plot_comp = jet_components_to_plot
+    elif plot_mode == "all":
+        plot_comp = all_components_to_plot
+
+    old_enable = getattr(jet, "enable_detailed_output", False)
+
+    old_infosw = jet.infosw.value
+
+    jet.enable_detailed_output = True
+    jet.infosw.value = 2
+
+    if force_rerun:
+        jet._cached_params = None
+
+    E_eval = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), max(int(n_eval), 2))
+    _ = jet(E_eval) #this is where it is re-run 
+
+    comps = jet._last_components  # should exist it is populated 
+
+    jet.enable_detailed_output = old_enable
+    jet.infosw.value = old_infosw
+
+    for name in plot_comp:
+        if name not in comps:
+            continue
+
+        nu_hz = np.asarray(comps[name]["energy"], dtype=float)
+        Snu_mjy = np.asarray(comps[name]["flux"], dtype=float)
+
+        m = np.isfinite(nu_hz) & np.isfinite(Snu_mjy) & (nu_hz > 0)
+        nu_hz = nu_hz[m]
+        Snu_mjy = Snu_mjy[m]
+        if nu_hz.size < 2:
+            continue
+
+        order = np.argsort(nu_hz)
+        nu_hz = nu_hz[order]
+        Snu_mjy = Snu_mjy[order]
+
+        # nuSnu = nu_hz * (Snu_mjy * 1e-26)  # erg / (s cm^2)
+        Lnu = Snu_mjy * mjy_to_cgs * fluxconv
+        style = style_map.get(name, dict(color="gray", ls="--", lw=1.0))
+        ax.plot(nu_hz, nu_hz*Lnu, **style)
 
     ax.legend(ncol=2, fontsize=8)
     return ax
@@ -871,7 +1289,7 @@ def combine_dataframes(directory_path, file_extension, columns=None):
 
         # read  file
         if columns:
-            raw = pd.read_table(file_path, names=columns, delim_whitespace=True, comment="#")
+            raw = pd.read_table(file_path, names=columns, sep='\s+', comment="#")
         else:
             raw = pd.read_table(file_path, sep=r"\s+", header=None, comment="#")
 
