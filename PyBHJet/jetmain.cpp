@@ -9,12 +9,13 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
 
     bool IsShock = false;						//flag to set shock heating
 
-    int nz = 100;								//total number of zones
+    int nz;								    //total number of zones    // updated for the new grid (not equal to anything anymore)
     int nel = 70;
     int syn_res = 10;							//number of bins per decade in synch frequency;
     int com_res = 6;							//number of bins per decade in compton frequency;
     int nsyn,ncom;								//number of bins in synch/compton frequency;
     int npsw = 1;								//switch to define number of protons calculations in agnjet
+    double dlgz = 0.1;                          // added for the new grid 
 
     // Use named variables directly 
     double Mbh = bhjet.Mbh;
@@ -70,12 +71,12 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
     double *tot_lum = new double[ne];			//specific luminosity array for sum of all components	
 
     //these are all defined in the header file: 
-    grid_pars grid;								//structure with grid parameters
+    // grid_pars grid;								//structure with grid parameters    // removed for the new grid 
     jet_dynpars jet_dyn;						//structure with jet dynamical parameters
     jet_enpars nozzle_ener;						//structure with jet energetic parameters
     zone_pars zone;								//strucutre with parameters of each individual zone
     com_pars agn_com;							//structure with parameters for inverse Compton fields in AGN
-    
+
     //External photon object declarations - from Kariba 
     ShSDisk Disk;
     BBody BLR;
@@ -166,10 +167,6 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
     dummy_elec.set_norm(1.);	
     dummy_elec.set_ndens();
 
-    grid.nz = nz;
-    grid.cut = 0;
-    grid.zcut = 1.e3*Rg;
-
     jet_dyn.min = zmin;
     jet_dyn.max = z_max;
     jet_dyn.h0 = 2.*r_0+zmin;
@@ -199,6 +196,27 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
         equipartition(jetrat,jet_dyn,nozzle_ener);
     }	
 
+    // ---------  build grid based on the value of z_diss: ---------
+
+    if (z_diss < zmin*pow(10, dlgz*1.5)) {
+            z_diss = zmin*pow(10, dlgz/2);
+            if (infosw > 1)
+                std::cout << "z_dissipation<z_jet_launching, set z_dissipation=z_jet_launching*10^(dlgz/2)" << std::endl;
+            
+        } else if (z_diss > z_max*pow(10, -dlgz*1.5)) {
+            z_diss = z_max*pow(10, -dlgz/2);
+            if (infosw > 1)
+                std::cout << "z_dissipation>z_max_calculation, set z_dissipation=z_max_calculation*10^(-dlgz/2)" << std::endl;
+        }
+
+    nz = static_cast<size_t>(std::log10(z_max/zmin)/dlgz);
+    size_t N1 = static_cast<size_t>(std::log10(z_diss*pow(10, -dlgz/2)/zmin)/dlgz);
+    double dlgz1 = std::log10(z_diss*pow(10, -dlgz/2)/zmin)/static_cast<double>(N1);
+    size_t N2 = nz - N1 - 1;
+    double dlgz2 = std::log10(z_max/(z_diss*pow(10, dlgz/2)))/static_cast<double>(N2);
+
+// new grid --------------------- ^^^^^^^^^^^^^^^^^^^^^^^^
+
     //check that the pair content is not negative, and also if running bljet that it's not too high
     if(nozzle_ener.eta<1){
         cout << "Unphysical pair content: " << nozzle_ener.eta << " pairs per proton. Check the value of " <<
@@ -211,15 +229,6 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
     }
 
     if(infosw>=3){
-        // cout << "Jet base parameters: " << endl;
-        // cout << "Pair content (ne/np): " << nozzle_ener.eta << endl;
-        // cout << "Initial magnetization: " << nozzle_ener.sig0 << endl;
-        // cout << "Particle average Lorenz factor: " << dummy_elec.av_gamma() << endl;
-        // cout << "Jet nozzle ends at: " << jet_dyn.h0/Rg << " Rg" << endl ;
-        // cout << "Jet nozzle optical depth: " << jet_dyn.r0*nozzle_ener.lepdens*sigtom << endl << endl;
-
-
-        // want to save everything out, rather than having to tell bhjet to do so also 
         output.jet_base_properties.pair_content.push_back(nozzle_ener.eta);
         output.jet_base_properties.init_mag.push_back(nozzle_ener.sig0);
         output.jet_base_properties.particle_avg_lorentz_factor.push_back(dummy_elec.av_gamma());
@@ -234,7 +243,20 @@ void jetmain(BhJetClass& bhjet, double* ear, int ne, double* photeng, double* ph
     for(int i=0;i<nz;i++){
 
         //calculate dynamics/energetics in each zone
-        jetgrid(i,grid,jet_dyn,zone.r,zone.delz,z);	
+
+        //this is replacing jetgrid calculation, new grid
+        if(i<N1) {
+                z = zmin*pow(10, dlgz1 * i);
+                zone.delz = zmin*(pow(10, dlgz1 * (i+1)) - pow(10, dlgz1 * i));
+            } else if(i==N1){
+                z = z_diss*pow(10, -dlgz/2);
+                zone.delz = z_diss*(pow(10, dlgz/2) - pow(10, -dlgz/2));
+            } else {
+                z = z_diss*pow(10, dlgz/2 + dlgz2 * (i-N1-1));
+                zone.delz = z_diss*(pow(10, dlgz/2 + dlgz2 * (i-N1-1+1)) - pow(10, dlgz/2 + dlgz2 * (i-N1-1)));
+            }
+
+        // jetgrid(i,grid,jet_dyn,zone.r,zone.delz,z);	#remove for new grid
         if(velsw==0){
             adjetpars(z,jet_dyn,nozzle_ener,tshift,zone,spline_speed,acc_speed);	 
         } else if (velsw==1){

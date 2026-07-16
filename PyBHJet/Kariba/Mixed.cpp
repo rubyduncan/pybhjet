@@ -47,7 +47,8 @@ void Mixed::set_p(double gmax){
     pmin_pl = av_th_p();
     pcut_pl = pow(pow(gmax,2.)-1.,1./2.)*mass_gr*cee;
 
-    double pinc = (log10(pcut_pl)-log10(pmin_th))/(size-1);
+    double p_grid_max = 10*pcut_pl; 
+    double pinc = (log10(p_grid_max)-log10(pmin_th))/(size-1);
 
     for (int i=0;i<size;i++){
         p[i] = pow(10.,log10(pmin_th)+i*pinc);

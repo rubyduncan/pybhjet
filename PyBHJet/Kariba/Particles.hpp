@@ -109,7 +109,7 @@ class Particles {
         double *gdens_diff;     //array with differential of number density for radiation calculation
 
         //for the cutoff function
-        int cutoff_type = 0;    // setting cutoff type within powerlaw/mixed 
+        int cutoff_type = 0;    // setting cutoff type for legacy bhjet without cutoff switch 
 						        
     public:
         ~Particles();

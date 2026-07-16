@@ -19,6 +19,7 @@ public:
     //Accessing parameters by name in python 
     double get_parameter(const std::string& name) const;
     void set_parameter(const std::string& name, double value);
+    void set_parameters(const std::vector<double>& new_params);
 
     int cutoff_type = 0;
     int get_cutoff_type() const {return cutoff_type; }

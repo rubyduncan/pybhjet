@@ -106,7 +106,7 @@ double norm_bkn_int(double x,void *p){
     double brk = (params->brk); // p_brk
     double max = (params->max); //p_cut
     double m = (params->m);	
-    int cut_type = (params->cutoff_type);
+    int cutoff_type = (params->cutoff_type);
 
     double mom_int = pow(pow(x,2.)-1.,1./2.)*m*cee;
     double C = Particles::cutoff_factor(mom_int / max, cut_type);	

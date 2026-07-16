@@ -113,13 +113,11 @@ void BhJetClass::print_parameters() const {
     std::cout << "BHJet Parameters:" << std::endl;
     std::cout << "-----------------" << std::endl;
 
-    // Determine the maximum width for parameter names
     size_t max_name_length = 0;
     for (const auto& pair : param_units) {
         max_name_length = std::max(max_name_length, pair.first.length());
     }
 
-    // Print the parameters with alignment
     for (const auto& pair : param_units) {
         const auto& name = pair.first;
         const auto& unit = pair.second;
@@ -127,7 +125,7 @@ void BhJetClass::print_parameters() const {
         if (it != param_name_to_index.end()) {
             size_t index = it->second;
 
-            // Align the parameter name and value
+            // Align the parameter name and value for nice printing 
             std::cout << std::left << std::setw(max_name_length + 2) << name
                       << ": " << std::setw(12) << std::left << params[index]
                       << unit << std::endl;
@@ -187,6 +185,14 @@ void BhJetClass::set_parameter(const std::string& name, double value) {
     } else {
         throw std::invalid_argument("Parameter name not found: " + name);
     }
+}
+
+void BhJetClass::set_parameters(const std::vector<double>& new_params) {
+    if (new_params.size() != params.size()) {
+        throw std::invalid_argument("Expected " + std::to_string(params.size()) + " parameters");
+    }
+    params = new_params;
+    update_internal_parameters();
 }
 
 std::vector<std::string> BhJetClass::get_parameter_names() const {

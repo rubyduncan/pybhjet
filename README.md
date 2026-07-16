@@ -69,6 +69,8 @@ If you want to install dependencies manually:
   - `matplotlib`
   - `pybind11`
   - `ipympl`
+  - `jupyterlab`
+  
 
 #### Steps: 
 

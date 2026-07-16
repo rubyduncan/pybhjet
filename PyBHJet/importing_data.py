@@ -12,12 +12,17 @@ def combine_dataframes(directory_path, file_extension, columns=None):
     """
     Will load files that have the columns:
         [nu (Hz), flux (mJy), err (mJy)]
+        
     Then converts each file to a new dataframe with 
         x    = E [keV]
         y    = dN/dE [ph cm^-2 s^-1 keV^-1]
         yerr = same 
     put files into radio / IR / UV based on filename naming
-    return (radio_df, ir_df, uv_df) for what 3ML expects
+    return (radio_df, ir_df, uv_df) for what 3ML expects. 
+
+    File format: this function is expecting that the files are named with "radio", "IR", "UV" 
+    somewhere in the file name, though it doesn't matter how many there are. It will split it up into 
+    these wavelengths and return three separate XYLike objects for them. 
     """
 
     radio_df_list = []

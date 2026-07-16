@@ -1,6 +1,6 @@
 import numpy as np
 from astromodels.functions.function import ModelAssertionViolation
-
+import time 
 import astropy.units as u
 from astromodels.functions.function import (
     Function1D,
@@ -177,13 +177,18 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
             fix : yes
 
     """
-    cutoff_type = 0
+    cutoff_type = 0 #needs to be set to something 
 
     def _setup(self):
         self.bhjet = pybhjet.PyBHJet()
         self._cached_params   = None
         self._cached_E_keV    = None
         self._cached_flux_ph  = None
+
+        #this is for the timing/analysis 
+        self._eval_calls = 0
+        self._run_calls = 0
+        self._t_run = 0.0
 
         #code switches: 
         self.bhjet.cutoff_type = int(self.cutoff_type)
@@ -198,7 +203,7 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
         self._last_jet_base_properties = None
         self._last_spectral_properties = None
 
-        # toggle to avoid doing heavy diag during big MCMC runs
+        # very important to avoid during large runs
         self.enable_detailed_output = False
   
 
@@ -258,42 +263,47 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
         """
         Map the 3ML parameters to Pybhjet, run the model, and return the interpolated output 
         """
-
         # only if params changed, call BHJet - this helps a lot with computation time per dataset
         if self._cached_params is None or params_vec != self._cached_params:
 
             # when jetmain is run (so bhjet.run()), premap parameters to BHJet
-            self.bhjet.set_parameter("Mbh", Mbh)
-            self.bhjet.set_parameter("theta", theta)
-            self.bhjet.set_parameter("dist", dist)
-            self.bhjet.set_parameter("redsh", redsh)
-            self.bhjet.set_parameter("jetrat", jetrat)
-            self.bhjet.set_parameter("r_0", r_0)
-            self.bhjet.set_parameter("z_diss", z_diss)
-            self.bhjet.set_parameter("z_acc", z_acc)
-            self.bhjet.set_parameter("z_max", z_max)
-            self.bhjet.set_parameter("t_e", t_e)
-            self.bhjet.set_parameter("f_nth", f_nth)
-            self.bhjet.set_parameter("f_pl", f_pl)
-            self.bhjet.set_parameter("pspec", pspec)
-            self.bhjet.set_parameter("f_heat", f_heat)
-            self.bhjet.set_parameter("f_beta", f_beta)
-            self.bhjet.set_parameter("f_sc", f_sc)
-            self.bhjet.set_parameter("p_beta", p_beta)
-            self.bhjet.set_parameter("sig_acc", sig_acc)
-            self.bhjet.set_parameter("l_disk", l_disk)
-            self.bhjet.set_parameter("r_in", r_in)
-            self.bhjet.set_parameter("r_out", r_out)
-            self.bhjet.set_parameter("compar1", compar1)
-            self.bhjet.set_parameter("compar2", compar2)
-            self.bhjet.set_parameter("compar3", compar3)
-            self.bhjet.set_parameter("compsw", compsw)
-            self.bhjet.set_parameter("velsw", velsw)
-            self.bhjet.set_parameter("infosw", infosw)
-            self.bhjet.set_parameter("EBLsw", EBLsw)
-            
+            # self.bhjet.set_parameter("Mbh", Mbh)
+            # self.bhjet.set_parameter("theta", theta)
+            # self.bhjet.set_parameter("dist", dist)
+            # self.bhjet.set_parameter("redsh", redsh)
+            # self.bhjet.set_parameter("jetrat", jetrat)
+            # self.bhjet.set_parameter("r_0", r_0)
+            # self.bhjet.set_parameter("z_diss", z_diss)
+            # self.bhjet.set_parameter("z_acc", z_acc)
+            # self.bhjet.set_parameter("z_max", z_max)
+            # self.bhjet.set_parameter("t_e", t_e)
+            # self.bhjet.set_parameter("f_nth", f_nth)
+            # self.bhjet.set_parameter("f_pl", f_pl)
+            # self.bhjet.set_parameter("pspec", pspec)
+            # self.bhjet.set_parameter("f_heat", f_heat)
+            # self.bhjet.set_parameter("f_beta", f_beta)
+            # self.bhjet.set_parameter("f_sc", f_sc)
+            # self.bhjet.set_parameter("p_beta", p_beta)
+            # self.bhjet.set_parameter("sig_acc", sig_acc)
+            # self.bhjet.set_parameter("l_disk", l_disk)
+            # self.bhjet.set_parameter("r_in", r_in)
+            # self.bhjet.set_parameter("r_out", r_out)
+            # self.bhjet.set_parameter("compar1", compar1)
+            # self.bhjet.set_parameter("compar2", compar2)
+            # self.bhjet.set_parameter("compar3", compar3)
+            # self.bhjet.set_parameter("compsw", compsw)
+            # self.bhjet.set_parameter("velsw", velsw)
+            # self.bhjet.set_parameter("infosw", infosw)
+            # self.bhjet.set_parameter("EBLsw", EBLsw)
+
             self.bhjet.cutoff_type = int(self.cutoff_type)
+            self.bhjet.set_parameters(list(params_vec))
+            
+            self._eval_calls += 1
+            t0 = time.perf_counter()
+            self._run_calls += 1
             self.bhjet.run()
+            self._t_run += time.perf_counter() - t0
 
             out = self.bhjet.get_output() #returning linear arrays for freq, flux 
 
@@ -361,4 +371,41 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
 
         return y
 
-        
+    
+
+    def get_detail(self,name,e_min_keV=1e-9,e_max_keV=1e10,n_eval=200,infosw=3):
+
+        '''
+        return the levels of infosw output to be used as a dataframe. can access: 
+
+        components
+        radiative_zones
+        numdens
+        jet_profile
+        jet_zone_properties
+        jet_base_properties
+        spectral_propertie
+
+        '''
+
+        old_enable = self.enable_detailed_output
+        old_infosw = self.infosw.value
+
+        try:
+            self.enable_detailed_output = True
+            self.infosw.value = infosw
+            self._cached_params = None
+
+            E_eval = np.logspace(np.log10(e_min_keV),np.log10(e_max_keV),max(int(n_eval), 2))
+            _ = self(E_eval)
+
+            result = getattr(self, f"_last_{name}", None)
+
+            if result is None:
+                raise AttributeError(f"No saved detail for: {name}")
+
+            return result.copy() if hasattr(result, "copy") else result
+
+        finally:
+            self.enable_detailed_output = old_enable
+            self.infosw.value = old_infosw
