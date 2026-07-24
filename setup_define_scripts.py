@@ -20,6 +20,8 @@ from plotting import (
     DEFAULT_STYLE,
     PlotStyle,
     evaluate_bhjet_components,
+    is_flux_space_plugin,
+    is_ogip_plugin,
     make_sed_axes,
     plot_bhjet_components,
     plot_flux_points,
@@ -29,6 +31,7 @@ from plotting import (
     plot_source_sed,
     plot_xray_file,
     plot_xylike,
+    split_plot_data,
 )
 from astromodels.xspec import *
 import re
@@ -720,144 +723,40 @@ def hz_eval_and_plot_sed(model, data_dict, components, sed_components_expr=None,
 
 
 
-def add_bhjet_radiative_components_to_plot(model_components,ax,e_min_keV=1e-9,e_max_keV=1e3,plot_mode='jet',force_rerun=True,n_eval=2,):
-    jet = model_components["jet"]
-
-    total_component = ['total', 'presyn']
-    jet_components_to_plot = ["presyn", "postsyn", "precom", "postcom"]
-    all_components_to_plot = ["presyn", "postsyn", "precom", "postcom", "disk", "bb"]
-
-    style_map = {
-        "total" :  dict(color="black", ls="-",  lw=1.5, label="Total Jet Emission"),
-        "presyn":  dict(color="dodgerblue", ls="-",  lw=1.5, label="Syn, z < z_diss"),
-        "postsyn": dict(color="darkblue",   ls="--", lw=1.5, label="Syn, z > z_diss"),
-        "precom":  dict(color="lightgreen", ls="-",  lw=1.5, label="IC,  z < z_diss"),
-        "postcom": dict(color="green",      ls=":",  lw=1.5, label="IC,  z > z_diss"),
-        "disk":    dict(color="red",        ls="-.", lw=1.5, label="Disk"),
-        "bb":      dict(color="orange",     ls="-.", lw=1.5, label="BB"),
+def _legacy_bhjet_components(plot_mode):
+    """Translate the original notebook modes into canonical component names."""
+    modes = {
+        "total": ("total", "presyn"),
+        "jet": ("presyn", "postsyn", "precom", "postcom"),
+        "all": ("presyn", "postsyn", "precom", "postcom", "disk", "bb"),
     }
-
-    if plot_mode == "total":
-        plot_comp = total_component
-    elif plot_mode == "jet":
-        plot_comp = jet_components_to_plot
-    elif plot_mode == "all":
-        plot_comp = all_components_to_plot
-
-    old_enable = getattr(jet, "enable_detailed_output", False)
-
-    old_infosw = jet.infosw.value
-
-    jet.enable_detailed_output = True
-    jet.infosw.value = 2
-
-    if force_rerun:
-        jet._cached_params = None
-
-    E_eval = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), max(int(n_eval), 2))
-    _ = jet(E_eval) #this is where it is re-run 
-
-    comps = jet._last_components  # should exist it is populated 
-
-    jet.enable_detailed_output = old_enable
-    jet.infosw.value = old_infosw
-
-    for name in plot_comp:
-        if name not in comps:
-            continue
-
-        nu_hz = np.asarray(comps[name]["energy"], dtype=float)
-        Snu_mjy = np.asarray(comps[name]["flux"], dtype=float)
-
-        m = np.isfinite(nu_hz) & np.isfinite(Snu_mjy) & (nu_hz > 0)
-        nu_hz = nu_hz[m]
-        Snu_mjy = Snu_mjy[m]
-        if nu_hz.size < 2:
-            continue
-
-        order = np.argsort(nu_hz)
-        nu_hz = nu_hz[order]
-        Snu_mjy = Snu_mjy[order]
-
-        nuSnu = nu_hz * (Snu_mjy * 1e-26)  # erg / (s cm^2)
-        style = style_map.get(name, dict(color="gray", ls="--", lw=1.0, label=name))
-        ax.plot(nu_hz, nuSnu, **style)
-
-    ax.legend(ncol=2, fontsize=8)
-    return ax
+    if plot_mode not in modes:
+        raise ValueError(f"Unknown plot_mode {plot_mode!r}; choose from {tuple(modes)}")
+    return modes[plot_mode]
 
 
+def add_bhjet_radiative_components_to_plot(model_components, ax, e_min_keV=1e-9,
+                                            e_max_keV=1e3, plot_mode="jet",
+                                            force_rerun=True, n_eval=2,
+                                            style=DEFAULT_STYLE, **kwargs):
+    """Compatibility wrapper for :func:`plotting.plot_bhjet_components`."""
+    return plot_bhjet_components(
+        model_components, ax=ax, components=_legacy_bhjet_components(plot_mode),
+        style=style, energy_range=(e_min_keV, e_max_keV), n_eval=n_eval, rerun=force_rerun,
+        legend=True, **kwargs,
+    )
 
-def bhjet_luminosity_components_to_plot(model_components,ax,e_min_keV=1e-9,e_max_keV=1e3,plot_mode='jet',force_rerun=True,n_eval=2,):
-    jet = model_components["jet"]
-    dist_kpc = jet.dist.value 
 
-    fluxconv = 4.0 * np.pi * (dist_kpc * 3.085677581e21) ** 2
-    mjy_to_cgs = 1e-26
-
-    total_component = ['total', 'presyn']
-    jet_components_to_plot = ["presyn", "postsyn", "precom", "postcom"]
-    all_components_to_plot = ["presyn", "postsyn", "precom", "postcom", "disk", "bb"]
-
-    style_map = {
-        "total" :  dict(color="black", ls="-",  lw=1.5, label="Total Jet Emission"),
-        "presyn":  dict(color="dodgerblue", ls="-",  lw=1.5, label="Syn, z < z_diss"),
-        "postsyn": dict(color="darkblue",   ls="--", lw=1.5, label="Syn, z > z_diss"),
-        "precom":  dict(color="lightgreen", ls="-",  lw=1.5, label="IC,  z < z_diss"),
-        "postcom": dict(color="green",      ls=":",  lw=1.5, label="IC,  z > z_diss"),
-        "disk":    dict(color="red",        ls="-.", lw=1.5, label="Disk"),
-        "bb":      dict(color="orange",     ls="-.", lw=1.5, label="BB"),
-    }
-
-    if plot_mode == "total":
-        plot_comp = total_component
-    elif plot_mode == "jet":
-        plot_comp = jet_components_to_plot
-    elif plot_mode == "all":
-        plot_comp = all_components_to_plot
-
-    old_enable = getattr(jet, "enable_detailed_output", False)
-
-    old_infosw = jet.infosw.value
-
-    jet.enable_detailed_output = True
-    jet.infosw.value = 2
-
-    if force_rerun:
-        jet._cached_params = None
-
-    E_eval = np.logspace(np.log10(e_min_keV), np.log10(e_max_keV), max(int(n_eval), 2))
-    _ = jet(E_eval) #this is where it is re-run 
-
-    comps = jet._last_components  # should exist it is populated 
-
-    jet.enable_detailed_output = old_enable
-    jet.infosw.value = old_infosw
-
-    for name in plot_comp:
-        if name not in comps:
-            continue
-
-        nu_hz = np.asarray(comps[name]["energy"], dtype=float)
-        Snu_mjy = np.asarray(comps[name]["flux"], dtype=float)
-
-        m = np.isfinite(nu_hz) & np.isfinite(Snu_mjy) & (nu_hz > 0)
-        nu_hz = nu_hz[m]
-        Snu_mjy = Snu_mjy[m]
-        if nu_hz.size < 2:
-            continue
-
-        order = np.argsort(nu_hz)
-        nu_hz = nu_hz[order]
-        Snu_mjy = Snu_mjy[order]
-
-        # nuSnu = nu_hz * (Snu_mjy * 1e-26)  # erg / (s cm^2)
-        Lnu = Snu_mjy * mjy_to_cgs * fluxconv
-        style = style_map.get(name, dict(color="gray", ls="--", lw=1.0, label=name))
-        ax.plot(nu_hz, nu_hz*Lnu, **style)
-
-    ax.legend(ncol=2, fontsize=8)
-    return ax
+def bhjet_luminosity_components_to_plot(model_components, ax, e_min_keV=1e-9,
+                                         e_max_keV=1e3, plot_mode="jet",
+                                         force_rerun=True, n_eval=2,
+                                         style=DEFAULT_STYLE, **kwargs):
+    """Luminosity-space compatibility wrapper for the canonical component plotter."""
+    return plot_bhjet_components(
+        model_components, ax=ax, components=_legacy_bhjet_components(plot_mode),
+        style=style, luminosity=True, energy_range=(e_min_keV, e_max_keV),
+        n_eval=n_eval, rerun=force_rerun, legend=True, **kwargs,
+    )
 
 
 #unit conversions ----------------- 

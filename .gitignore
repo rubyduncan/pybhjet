@@ -3,6 +3,7 @@ pybhjet_venv/
 .venv/
 venv/
 env/
+threeml_paper_env/
 
 # python cache
 __pycache__/
@@ -19,3 +20,4 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+build-python39-backup/

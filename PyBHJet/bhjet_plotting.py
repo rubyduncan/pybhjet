@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import math 
 from matplotlib import rc, rcParams
+from plotting import DEFAULT_STYLE, plot_bhjet_component_data
 
 #for using latex commands for plotting
 # rc('text', usetex=True)
@@ -252,73 +253,44 @@ def preprocess_spectral_properties(output, include_descriptions=False):
 
 
 
-def plot_nufnu_ergshz(fits, fig_output_path=None, title="Emission Components"):
+def plot_nufnu_ergshz(fits, fig_output_path=None, title="Emission Components", ax=None,
+                      style=DEFAULT_STYLE):
+    """Plot preprocessed BHJet components in ``nu F_nu`` space.
 
-    component_styles = {
-        'postsyn': {'color': 'darkblue', 'style': (0, (5, 1)), 'label': 'Syn , $z>z_{\\rm diss}$'},
-        'precom': {'color': 'lightgreen', 'style': '-', 'label': 'IC, $z<z_{\\rm diss}$'},
-        'postcom': {'color': 'green', 'style': (0, (3, 1, 1, 1)), 'label': 'IC, $z>z_{\\rm diss}$'},
-        'presyn': {'color': 'dodgerblue', 'style': '-', 'label': 'Syn, $z<z_{\\rm diss}$'},
-        'disk': {'color': 'red', 'style': (0, (3, 2, 1, 2, 1, 2)), 'label': 'Disk'},
-        'bb': {'color': 'orange', 'style': '-', 'label': 'Blackbody'},
-        'total': {'color': 'black', 'style': '-', 'label': 'Total'}
-        # ,'corona': {'color': 'darkorange', 'style': '-', 'label': 'Corona'} 
-    }
-
-    fig, ax = plt.subplots(figsize=(13, 7))
-
-    for component, style in component_styles.items():
-        if component in fits:
-            energy = fits[component]["energy"]
-            flux = fits[component]["flux"]/mjy_conv
-            ax.plot(energy, energy*flux, label=style["label"], linestyle=style["style"], color=style["color"], linewidth=2)
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
+    This legacy notebook helper now delegates to the shared component plotter;
+    edit ``plotting.DEFAULT_COMPONENT_STYLES`` or pass a ``PlotStyle`` to
+    change every component consistently.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=(13, 7))
+    plot_bhjet_component_data(fits, ax=ax, style=style)
     ax.set_xlabel("Frequency (Hz)", fontsize=18)
-    ax.set_ylabel("$\\nu F_\\nu$ (erg/cm2/s)", fontsize=18)
-    # ax.set_ylabel(r"$\nu F_{\nu}$ (erg/s/cm$^{2}$)", fontsize=16)
-    # ax.set_title(title, fontsize=16)
-    # ax.legend(fontsize=12)
-    # ax.grid(True)
-
+    ax.set_ylabel(r"$\nu F_\nu$ (erg/cm2/s)", fontsize=18)
     if fig_output_path:
-        plt.savefig(fig_output_path, dpi = 300)
+        ax.figure.savefig(fig_output_path, dpi=300)
+    return ax.figure, ax
 
 
 
-def plot_flux_mjy(data, output_path=None, title=None):
+def plot_flux_mjy(data, output_path=None, title=None, ax=None, style=DEFAULT_STYLE):
+    """Plot preprocessed BHJet components in flux-density space.
 
-    component_styles = {
-        'postsyn': {'color': 'darkblue', 'style': (0, (5, 1)), 'label': 'Syn , $z>z_{\\rm diss}$'},
-        'precom': {'color': 'lightgreen', 'style': '-', 'label': 'IC, $z<z_{\\rm diss}$'},
-        'postcom': {'color': 'green', 'style': (0, (3, 1, 1, 1)), 'label': 'IC, $z>z_{\\rm diss}$'},
-        'presyn': {'color': 'dodgerblue', 'style': '-', 'label': 'Syn, $z<z_{\\rm diss}$'},
-        'disk': {'color': 'red', 'style': (0, (3, 2, 1, 2, 1, 2)), 'label': 'Disk'},
-        'bb': {'color': 'orange', 'style': '-', 'label': 'Blackbody'},
-        'total': {'color': 'black', 'style': '-', 'label': 'Total'}
-        # ,'corona': {'color': 'darkorange', 'style': '-', 'label': 'Corona'} 
-    }
-
-    fig, ax = plt.subplots(figsize=(13, 7))
-
-    for component, style in component_styles.items():
-        if component in data:
-            energy = data[component]["energy"]
-            flux = data[component]["flux"]/mjy_conv
-            ax.plot(energy, flux, label=style["label"], linestyle=style["style"], color=style["color"], linewidth=1)
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
+    The legacy function divided output fluxes by ``mjy_conv``; that scaling is
+    retained so existing notebooks reproduce their current figures.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=(13, 7))
+    plot_bhjet_component_data(
+        data, ax=ax, style=style.with_overrides(model_linewidth=1),
+        flux_density=True, scale_factor=1 / mjy_conv, legend=True,
+    )
     ax.set_xlabel("Frequency (Hz)", fontsize=14)
-    ax.set_ylabel("$F_\\nu$ (mJy)")
-    # ax.set_ylabel(r"$F_{\nu}$ (erg/s/cm$^{2}$)", fontsize=16)
+    ax.set_ylabel(r"$F_\nu$ (mJy)")
     ax.set_title(title, fontsize=16)
-    ax.legend(fontsize=12)
     ax.grid(True)
-
     if output_path:
-        plt.savefig(output_path, dpi = 300)
+        ax.figure.savefig(output_path, dpi=300)
+    return ax.figure, ax
 
 
 

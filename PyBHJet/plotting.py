@@ -6,7 +6,7 @@ already-built threeML plugins and model components from ``setup_define_scripts``
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Mapping
 
@@ -19,6 +19,19 @@ MJY_TO_CGS = 1e-26
 KPC_TO_CM = 3.085677581e21
 
 
+# This is the one place to change BHJet component colours, dashes, or labels.
+# ``style`` is retained as an accepted alias for old notebook dictionaries.
+DEFAULT_COMPONENT_STYLES = {
+    "total": {"color": "black", "linestyle": "-", "label": "Total"},
+    "presyn": {"color": "dodgerblue", "linestyle": "-", "label": r"Syn, $z < z_{\rm diss}$"},
+    "postsyn": {"color": "darkblue", "linestyle": (0, (5, 1)), "label": r"Syn, $z > z_{\rm diss}$"},
+    "precom": {"color": "lightgreen", "linestyle": "-", "label": r"IC, $z < z_{\rm diss}$"},
+    "postcom": {"color": "green", "linestyle": (0, (3, 1, 1, 1)), "label": r"IC, $z > z_{\rm diss}$"},
+    "disk": {"color": "red", "linestyle": (0, (3, 2, 1, 2, 1, 2)), "label": "Disk"},
+    "bb": {"color": "orange", "linestyle": "-", "label": "Blackbody"},
+}
+
+
 @dataclass(frozen=True)
 class PlotStyle:
     """Visual defaults, overridable per figure without changing global rcParams."""
@@ -27,25 +40,98 @@ class PlotStyle:
     data_marker: str = "o"
     data_markersize: float = 5
     data_alpha: float = 0.85
-    model_linewidth: float = 2
+    model_linewidth: float = 1.5
     legend_fontsize: float = 9
+    confidence_alpha_95: float = 0.16
+    confidence_alpha_68: float = 0.32
     data_colors: Mapping[str, str] = field(
         default_factory=lambda: {"rad": "#0072B2", "ir": "#E69F00", "uv": "#009E73"}
     )
     component_styles: Mapping[str, Mapping[str, object]] = field(
-        default_factory=lambda: {
-            "total": {"color": "black", "linestyle": "-", "label": "Total"},
-            "presyn": {"color": "#0072B2", "linestyle": "-", "label": "Synchrotron (pre-dissipation)"},
-            "postsyn": {"color": "#56B4E9", "linestyle": "--", "label": "Synchrotron (post-dissipation)"},
-            "precom": {"color": "#009E73", "linestyle": "-", "label": "Compton (pre-dissipation)"},
-            "postcom": {"color": "#CC79A7", "linestyle": ":", "label": "Compton (post-dissipation)"},
-            "disk": {"color": "#D55E00", "linestyle": "-.", "label": "Disk"},
-            "bb": {"color": "#E69F00", "linestyle": "-.", "label": "Blackbody"},
-        }
+        default_factory=lambda: {name: dict(spec) for name, spec in DEFAULT_COMPONENT_STYLES.items()}
     )
+
+    def with_overrides(self, **overrides):
+        """Return a copy with figure-wide fields changed, without global state."""
+        return replace(self, **overrides)
+
+    def with_component_overrides(self, **component_overrides):
+        """Return a copy with only the named component styles changed.
+
+        Example
+        -------
+        ``paper_style = DEFAULT_STYLE.with_component_overrides(
+        presyn={"color": "navy", "label": "Compact-jet synchrotron"})``
+        """
+        merged = {name: dict(spec) for name, spec in self.component_styles.items()}
+        for name, overrides in component_overrides.items():
+            overrides = dict(overrides)
+            if "style" in overrides and "linestyle" not in overrides:
+                overrides["linestyle"] = overrides["style"]
+            if "ls" in overrides and "linestyle" not in overrides:
+                overrides["linestyle"] = overrides["ls"]
+            if "lw" in overrides and "linewidth" not in overrides:
+                overrides["linewidth"] = overrides["lw"]
+            merged.setdefault(name, {})
+            merged[name].update(overrides)
+        return replace(self, component_styles=merged)
 
 
 DEFAULT_STYLE = PlotStyle()
+
+
+def component_plot_kwargs(style, component, overrides=None):
+    """Return Matplotlib-ready style keywords for one BHJet component.
+
+    Existing notebooks sometimes use ``style``, ``ls`` and ``lw``. They are
+    normalized here so the editable component mapping can use either familiar
+    shorthand or Matplotlib's long names.
+    """
+    spec = dict(style.component_styles.get(component, {"label": component}))
+    if "style" in spec and "linestyle" not in spec:
+        spec["linestyle"] = spec["style"]
+    if "ls" in spec and "linestyle" not in spec:
+        spec["linestyle"] = spec["ls"]
+    if "lw" in spec and "linewidth" not in spec:
+        spec["linewidth"] = spec["lw"]
+    incoming = dict(overrides or {})
+    spec.update(incoming)
+    if "style" in incoming and "linestyle" not in incoming:
+        spec["linestyle"] = spec["style"]
+    spec.pop("style", None)
+    if "ls" in incoming and "linestyle" not in incoming:
+        spec["linestyle"] = spec["ls"]
+    spec.pop("ls", None)
+    if "lw" in incoming and "linewidth" not in incoming:
+        spec["linewidth"] = spec["lw"]
+    spec.pop("lw", None)
+    spec.setdefault("linewidth", style.model_linewidth)
+    return spec
+
+
+def is_ogip_plugin(plugin):
+    """Return whether a threeML plugin is OGIP/count-space data.
+
+    OGIP data are response-folded spectra and are intentionally never
+    converted to the flux-space SED representation used in this module.
+    """
+    return any(cls.__name__ == "OGIPLike" for cls in type(plugin).__mro__)
+
+
+def is_flux_space_plugin(plugin):
+    """Return whether a plugin can be plotted as flux-space XY data."""
+    return not is_ogip_plugin(plugin) and hasattr(plugin, "x") and hasattr(plugin, "y")
+
+
+def split_plot_data(data):
+    """Split a plugin mapping into flux-space and OGIP/count-space datasets."""
+    flux_data, ogip_data = {}, {}
+    for name, plugin in (data or {}).items():
+        if is_ogip_plugin(plugin):
+            ogip_data[name] = plugin
+        elif is_flux_space_plugin(plugin):
+            flux_data[name] = plugin
+    return flux_data, ogip_data
 
 
 def kev_to_hz(energy_kev):
@@ -109,6 +195,11 @@ def plot_flux_points(points, *, ax=None, label=None, color=None, style=DEFAULT_S
 
 def plot_xylike(plugin, *, ax=None, label=None, color=None, style=DEFAULT_STYLE, luminosity=False, model_components=None, scale_factor=1, **kwargs):
     """Plot one threeML ``XYLike`` dataset in frequency SED space."""
+    if not is_flux_space_plugin(plugin):
+        raise TypeError(
+            "Flux-space plotting accepts XYLike-style plugins only. "
+            "Plot OGIPLike data separately with plot_ogip_with_model()."
+        )
     ax = make_sed_axes(ax, style=style, luminosity=luminosity)
     energy = np.asarray(plugin.x)
     flux = photon_flux_to_mjy(plugin.y, energy)
@@ -161,28 +252,55 @@ def evaluate_bhjet_components(model_components, *, energy_range=(1e-9, 1e3), n_e
         jet.infosw.value = previous_infosw
 
 
-def plot_bhjet_components(model_components, *, ax=None, components=("presyn", "postsyn", "precom", "postcom"), style=DEFAULT_STYLE, luminosity=False, energy_range=(1e-9, 1e3), rerun=True, scale_factor=1, **kwargs):
-    """Add selected cached BHJet radiative components to an SED axis."""
+def plot_bhjet_component_data(component_data, *, ax=None, components=None,
+                              style=DEFAULT_STYLE, luminosity=False,
+                              distance_kpc=None, scale_factor=1,
+                              flux_density=False, legend=False, **kwargs):
+    """Plot BHJet detailed-output dictionaries without evaluating a model.
+
+    ``component_data`` is the mapping returned by
+    :func:`bhjet_plotting.preprocess_component_output` or stored in a fitted
+    model's ``_last_components`` cache. Values are expected in Hz and mJy.
+    Set ``flux_density=True`` for an ``F_nu`` plot; the default is ``nu F_nu``
+    (or ``nu L_nu`` when ``luminosity=True``).
+    """
     ax = make_sed_axes(ax, style=style, luminosity=luminosity)
-    detailed = evaluate_bhjet_components(model_components, energy_range=energy_range, rerun=rerun)
-    factor = _luminosity_factor(model_components) if luminosity else 1
+    if luminosity and distance_kpc is None:
+        raise ValueError("distance_kpc is required for raw-component luminosity plots")
+    factor = 4 * np.pi * (distance_kpc * KPC_TO_CM) ** 2 if luminosity else 1
+    selected = tuple(component_data) if components is None else components
     custom_label = kwargs.pop("label", None)
-    for index, name in enumerate(components):
-        if name not in detailed:
+    for index, name in enumerate(selected):
+        if name not in component_data:
             continue
-        frequency = np.asarray(detailed[name]["energy"], dtype=float)
-        flux = np.asarray(detailed[name]["flux"], dtype=float)
+        frequency = np.asarray(component_data[name]["energy"], dtype=float)
+        flux = np.asarray(component_data[name]["flux"], dtype=float)
         valid = np.isfinite(frequency) & np.isfinite(flux) & (frequency > 0)
         if valid.sum() < 2:
             continue
         order = np.argsort(frequency[valid])
-        spec = dict(style.component_styles.get(name, {"label": name}))
-        spec.update(kwargs)
+        spec = component_plot_kwargs(style, name, kwargs)
         if custom_label is not None:
             spec["label"] = custom_label if index == 0 else "_nolegend_"
-        ax.plot(frequency[valid][order], (frequency[valid] * flux[valid] * MJY_TO_CGS * factor * scale_factor)[order],
-                linewidth=style.model_linewidth, **spec)
+        y = flux[valid] * MJY_TO_CGS * factor * scale_factor
+        if not flux_density:
+            y = frequency[valid] * y
+        ax.plot(frequency[valid][order], y[order], **spec)
+    if legend:
+        ax.legend(fontsize=style.legend_fontsize)
     return ax
+
+
+def plot_bhjet_components(model_components, *, ax=None, components=("presyn", "postsyn", "precom", "postcom"), style=DEFAULT_STYLE, luminosity=False, energy_range=(1e-9, 1e3), n_eval=2, rerun=True, scale_factor=1, **kwargs):
+    """Evaluate BHJet then add selected radiative components to an SED axis."""
+    detailed = evaluate_bhjet_components(
+        model_components, energy_range=energy_range, n_eval=n_eval, rerun=rerun,
+    )
+    distance_kpc = model_components["jet"].dist.value if luminosity else None
+    return plot_bhjet_component_data(
+        detailed, ax=ax, components=components, style=style, luminosity=luminosity,
+        distance_kpc=distance_kpc, scale_factor=scale_factor, **kwargs,
+    )
 
 
 def plot_sed(*, data=None, model_components=None, model_expressions=None, xray_path=None, ax=None, style=DEFAULT_STYLE, luminosity=False, title=None, energy_range=(1e-9, 1e3), n_points=1000, legend=True):
@@ -193,7 +311,8 @@ def plot_sed(*, data=None, model_components=None, model_expressions=None, xray_p
     expressions from your YAML component dictionary.
     """
     ax = make_sed_axes(ax, style=style, luminosity=luminosity, title=title)
-    for name, plugin in (data or {}).items():
+    flux_data, _ = split_plot_data(data)
+    for name, plugin in flux_data.items():
         plot_xylike(plugin, ax=ax, color=style.data_colors.get(name), style=style,
                     luminosity=luminosity, model_components=model_components)
     if xray_path:
@@ -220,7 +339,7 @@ def plot_source_sed(*, data, model_components, ax=None, xray_path=None, color=No
     """
     ax = make_sed_axes(ax, style=style, luminosity=luminosity)
     for dataset in data.values():
-        if hasattr(dataset, "x") and hasattr(dataset, "y"):
+        if is_flux_space_plugin(dataset):
             plot_xylike(dataset, ax=ax, color=color, style=style, luminosity=luminosity,
                         model_components=model_components, scale_factor=scale_factor)
     if xray_path:
@@ -278,8 +397,8 @@ def plot_density_comparison(samples_by_label, *, parameters=None, log_parameters
 
 
 def plot_confidence_band(ax, x, bands, *, label=None, color=None, show_95=True,
-                         show_68=True, alpha_95=0.16, alpha_68=0.32,
-                         transform=None, **kwargs):
+                         show_68=True, alpha_95=None, alpha_68=None,
+                         style=DEFAULT_STYLE, transform=None, **kwargs):
     """Draw percentile confidence bands from a ``{percentile: values}`` mapping.
 
     Supply ``transform`` when spectra need conversion before display, e.g.
@@ -287,6 +406,8 @@ def plot_confidence_band(ax, x, bands, *, label=None, color=None, show_95=True,
     """
     x = np.asarray(x)
     convert = transform or (lambda values: values)
+    alpha_95 = style.confidence_alpha_95 if alpha_95 is None else alpha_95
+    alpha_68 = style.confidence_alpha_68 if alpha_68 is None else alpha_68
     handles = []
     if show_95 and 2.5 in bands and 97.5 in bands:
         handles.append(ax.fill_between(x, convert(np.asarray(bands[2.5])),

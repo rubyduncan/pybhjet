@@ -5,17 +5,23 @@ project(PyBHJet)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Specify CMAKE_PREFIX_PATH for pybind11 
- #shoudl find the CMAKE_PREFIX_PATH for pybind11, can set it directly if it is not found. 
+# Use the interpreter selected by CMake (or supplied with
+# -DPython3_EXECUTABLE=/path/to/python). This keeps the compiled extension ABI
+# aligned with the active analysis environment.
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 
-set(Python3_EXECUTABLE "${CMAKE_SOURCE_DIR}/pybhjet_venv/bin/python")
-
-## forcing it to be found, but only looking in the venv (so not great)
-execute_process( 
-  COMMAND ${Python3_EXECUTABLE} -m pybind11 --cmakedir
+execute_process(
+  COMMAND "${Python3_EXECUTABLE}" -m pybind11 --cmakedir
   OUTPUT_VARIABLE pybind11_dir
   OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE pybind11_status
 )
+
+if(NOT pybind11_status EQUAL 0 OR pybind11_dir STREQUAL "")
+  message(FATAL_ERROR
+    "pybind11 is not available for ${Python3_EXECUTABLE}. "
+    "Activate the intended environment and run: python -m pip install pybind11")
+endif()
 
 set(pybind11_DIR "${pybind11_dir}")
 find_package(pybind11 CONFIG REQUIRED)
