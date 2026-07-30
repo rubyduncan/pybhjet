@@ -43,6 +43,7 @@ TOTAL_MODEL_LIB = {
     "TbAbs": TbAbs,
     "ZDust": ZDust,
     "zpcfabs": XS_zpcfabs,
+    "zphabs": XS_zphabs,
     "zxipcf": XS_zxipcf,  
     "pexmon": XS_pexmon, 
     "apec": XS_apec,
@@ -321,7 +322,7 @@ def eval_rpn(rpn, components):
 
 
 def apply_jet_config(model_components, model_yaml_dict):
-    '''This is to set the cutoff type before the model runs '''
+    '''Apply non-parameter BHJet switches before the model runs.'''
     cfg = model_yaml_dict.get("model_switches", {})
     jet_cfg = cfg.get("jet", {})
 

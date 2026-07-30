@@ -120,10 +120,10 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
             max : 0.04 
             delta : 0.1
         sig_acc : 
-            desc : Magnetization at acceleration region
-            initial value : 0.01
-            min : 0.01
-            max : 1
+            desc : log10 magnetization at acceleration region
+            initial value : -2
+            min : -4
+            max : 0
             delta : 0.1
         l_disk : 
             desc : Disk Luminosity, L_edd
@@ -178,6 +178,8 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
 
     """
     cutoff_type = 0 #needs to be set to something 
+    # ``sig_acc`` is always sampled as log10(sigma_acc) by threeML.  The
+    # physical C++ BHJet model receives the linear value in ``evaluate``.
 
     def _setup(self):
         self.bhjet = pybhjet.PyBHJet()
@@ -250,11 +252,19 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
                  compar1, compar2, compar3, compsw, velsw,infosw, EBLsw
                  ):
         
+        sig_acc_log10 = float(sig_acc)
+        sig_acc_physical = 10.0 ** sig_acc_log10
+        if not np.isfinite(sig_acc_physical) or sig_acc_physical <= 0.0:
+            raise ModelAssertionViolation(
+                f"BHJet received an invalid log10(sigma_acc) value for sig_acc: {sig_acc_log10}. "
+                "The C++ model requires a finite, positive physical magnetization."
+            )
+
         params_vec = (
             float(Mbh), float(theta), float(dist), float(redsh),
             float(jetrat), float(r_0), float(z_diss), float(z_acc), float(z_max),
             float(t_e), float(f_nth), float(f_pl), float(pspec), float(f_heat),
-            float(f_beta), float(f_sc), float(p_beta), float(sig_acc),
+            float(f_beta), float(f_sc), float(p_beta), sig_acc_physical,
             float(l_disk), float(r_in), float(r_out),
             float(compar1), float(compar2), float(compar3),
             float(compsw), float(velsw), float(infosw), float(EBLsw),
@@ -266,38 +276,12 @@ class BHJetModel(Function1D, metaclass=FunctionMeta):
         # only if params changed, call BHJet - this helps a lot with computation time per dataset
         if self._cached_params is None or params_vec != self._cached_params:
 
-            # when jetmain is run (so bhjet.run()), premap parameters to BHJet
-            # self.bhjet.set_parameter("Mbh", Mbh)
-            # self.bhjet.set_parameter("theta", theta)
-            # self.bhjet.set_parameter("dist", dist)
-            # self.bhjet.set_parameter("redsh", redsh)
-            # self.bhjet.set_parameter("jetrat", jetrat)
-            # self.bhjet.set_parameter("r_0", r_0)
-            # self.bhjet.set_parameter("z_diss", z_diss)
-            # self.bhjet.set_parameter("z_acc", z_acc)
-            # self.bhjet.set_parameter("z_max", z_max)
-            # self.bhjet.set_parameter("t_e", t_e)
-            # self.bhjet.set_parameter("f_nth", f_nth)
-            # self.bhjet.set_parameter("f_pl", f_pl)
-            # self.bhjet.set_parameter("pspec", pspec)
-            # self.bhjet.set_parameter("f_heat", f_heat)
-            # self.bhjet.set_parameter("f_beta", f_beta)
-            # self.bhjet.set_parameter("f_sc", f_sc)
-            # self.bhjet.set_parameter("p_beta", p_beta)
-            # self.bhjet.set_parameter("sig_acc", sig_acc)
-            # self.bhjet.set_parameter("l_disk", l_disk)
-            # self.bhjet.set_parameter("r_in", r_in)
-            # self.bhjet.set_parameter("r_out", r_out)
-            # self.bhjet.set_parameter("compar1", compar1)
-            # self.bhjet.set_parameter("compar2", compar2)
-            # self.bhjet.set_parameter("compar3", compar3)
-            # self.bhjet.set_parameter("compsw", compsw)
-            # self.bhjet.set_parameter("velsw", velsw)
-            # self.bhjet.set_parameter("infosw", infosw)
-            # self.bhjet.set_parameter("EBLsw", EBLsw)
-
+            #premaps parameters to bhjet all at once: 
             self.bhjet.cutoff_type = int(self.cutoff_type)
             self.bhjet.set_parameters(list(params_vec))
+            # ``params_vec`` contains the linear value too; set it explicitly so
+            # the wrapper convention remains unambiguous at the C++ boundary.
+            self.bhjet.set_parameter("sig_acc", sig_acc_physical)
             
             self._eval_calls += 1
             t0 = time.perf_counter()

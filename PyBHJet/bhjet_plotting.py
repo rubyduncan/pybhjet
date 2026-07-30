@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import math 
 from matplotlib import rc, rcParams
+from matplotlib.colors import LogNorm, Normalize
 from plotting import DEFAULT_STYLE, plot_bhjet_component_data
 
 #for using latex commands for plotting
@@ -87,6 +88,185 @@ def preprocess_numdens_output(output):
         print(f"[ERROR] Unexpected error: {e}")
 
     return data
+
+
+def _detail_column(detail, name):
+    """Return one named column from a detail dictionary or DataFrame."""
+    if detail is None:
+        return None
+    if isinstance(detail, dict):
+        value = detail.get(name)
+    else:
+        try:
+            value = detail[name]
+        except (KeyError, TypeError):
+            return None
+    return None if value is None else np.asarray(value, dtype=float)
+
+
+def plot_lepton_distribution_per_zone(
+    numdens,
+    jet_profile=None,
+    *,
+    distribution="momentum",
+    weighted=True,
+    zones=None,
+    every_nth=1,
+    points_per_zone=None,
+    cmap="magma",
+    ax=None,
+    colorbar=True,
+    linewidth=1.25,
+    alpha=0.85,
+    title=None,
+):
+    """Plot BHJet lepton distributions for the individual jet zones.
+
+    Parameters
+    ----------
+    numdens : dict
+        The mapping returned by ``jet.get_detail("numdens", infosw=3)``.
+        BHJet stores each zone consecutively in the flattened arrays.
+    jet_profile : dict or pandas.DataFrame, optional
+        The matching result from ``jet.get_detail("jet_profile", infosw=3)``.
+        When supplied, curves are coloured by their distance along the jet,
+        ``z_rg``. Otherwise they are coloured by zone index.
+    distribution : {"gamma", "momentum"}
+        Plot ``n(gamma)`` or ``n(p)``. The default, ``"momentum"``, matches
+        the per-zone particle plots previously used in the BHJet notebooks.
+    weighted : bool, default True
+        Plot ``gamma * n(gamma)`` or ``p * n(p)``. Set False for the
+        differential number-density distribution itself.
+    zones : iterable of int, optional
+        Explicit zone indices to show. By default all zones are eligible.
+    every_nth : int, default 1
+        Keep every Nth eligible zone, useful for dense detailed output.
+    points_per_zone : int, optional
+        Override the number of particle-grid samples per zone. This is
+        inferred from ``jet_profile`` when possible; otherwise BHJet's
+        standard 70-point particle grid is used.
+
+    Returns
+    -------
+    (matplotlib.figure.Figure, matplotlib.axes.Axes)
+        The figure and axis containing the curves.
+    """
+    if distribution not in {"gamma", "momentum"}:
+        raise ValueError("distribution must be 'gamma' or 'momentum'")
+    if every_nth < 1:
+        raise ValueError("every_nth must be at least 1")
+
+    x_key, density_key = ("gamma", "n_g") if distribution == "gamma" else ("momentum", "n_p")
+    x_values = _detail_column(numdens, x_key)
+    density = _detail_column(numdens, density_key)
+    if x_values is None or density is None:
+        raise ValueError(f"numdens must contain '{x_key}' and '{density_key}' arrays")
+    if x_values.ndim != 1 or density.ndim != 1 or len(x_values) != len(density):
+        raise ValueError("numdens coordinate and density arrays must be one-dimensional and equally sized")
+
+    z_rg = _detail_column(jet_profile, "z_rg")
+    n_zones = len(z_rg) if z_rg is not None and len(z_rg) else None
+    if points_per_zone is None:
+        if n_zones is not None and len(x_values) % n_zones == 0:
+            points_per_zone = len(x_values) // n_zones
+        elif len(x_values) % 70 == 0:
+            points_per_zone = 70  # BHJet's C++ particle grid uses nel = 70.
+        else:
+            raise ValueError(
+                "Cannot infer the number of particle samples per zone. Pass "
+                "points_per_zone explicitly or provide the matching jet_profile."
+            )
+    points_per_zone = int(points_per_zone)
+    if points_per_zone < 2 or len(x_values) % points_per_zone:
+        raise ValueError("points_per_zone must divide the numdens arrays and be at least 2")
+
+    inferred_zones = len(x_values) // points_per_zone
+    if n_zones is not None and n_zones != inferred_zones:
+        raise ValueError(
+            f"jet_profile has {n_zones} zones but numdens contains {inferred_zones}; "
+            "obtain both details from the same BHJet evaluation."
+        )
+    if z_rg is None or len(z_rg) != inferred_zones:
+        z_rg = np.arange(inferred_zones, dtype=float)
+        colour_label = "Zone index"
+        norm = Normalize(vmin=0, vmax=max(inferred_zones - 1, 1))
+    else:
+        valid_z = z_rg[np.isfinite(z_rg) & (z_rg > 0)]
+        if len(valid_z) < 2 or np.isclose(valid_z.min(), valid_z.max()):
+            norm = Normalize(vmin=0, vmax=max(inferred_zones - 1, 1))
+            colour_label = "Zone index"
+        else:
+            norm = LogNorm(vmin=valid_z.min(), vmax=valid_z.max())
+            colour_label = r"Zone location $z/r_g$"
+
+    if zones is None:
+        selected_zones = list(range(inferred_zones))
+    else:
+        selected_zones = [int(zone) for zone in zones]
+        invalid = [zone for zone in selected_zones if zone < 0 or zone >= inferred_zones]
+        if invalid:
+            raise IndexError(f"Zone indices out of range: {invalid}")
+    selected_zones = selected_zones[::every_nth]
+
+    if ax is None:
+        figure, ax = plt.subplots(figsize=(8, 5.5))
+    else:
+        figure = ax.figure
+    cmap_object = plt.colormaps[cmap]
+    plotted = []
+    for zone in selected_zones:
+        start, stop = zone * points_per_zone, (zone + 1) * points_per_zone
+        x_zone = x_values[start:stop]
+        density_zone = density[start:stop]
+        valid = np.isfinite(x_zone) & np.isfinite(density_zone) & (x_zone > 0) & (density_zone > 0)
+        if valid.sum() < 2:
+            continue
+        x_zone, density_zone = x_zone[valid], density_zone[valid]
+        order = np.argsort(x_zone)
+        x_zone, density_zone = x_zone[order], density_zone[order]
+        y_zone = density_zone * x_zone if weighted else density_zone
+        colour_value = z_rg[zone] if colour_label.startswith("Zone location") else zone
+        ax.plot(x_zone, y_zone, color=cmap_object(norm(colour_value)), linewidth=linewidth, alpha=alpha)
+        plotted.append(zone)
+
+    if not plotted:
+        raise ValueError("No positive, finite lepton-distribution values were available for the selected zones")
+
+    variable_label = r"$\gamma$" if distribution == "gamma" else r"$p$ (g cm s$^{-1}$)"
+    if distribution == "gamma":
+        density_label = r"$\gamma\,n(\gamma)$ (cm$^{-3}$)" if weighted else r"$n(\gamma)$ (cm$^{-3}$)"
+    else:
+        density_label = r"$p\,n(p)$ (cm$^{-3}$)" if weighted else r"$n(p)$ (cm$^{-3}$ (g cm s$^{-1}$)$^{-1}$)"
+    ax.set(xscale="log", yscale="log", xlabel=variable_label, ylabel=density_label)
+    ax.grid(which="both", alpha=0.2)
+    ax.set_title(title or f"Lepton distribution per BHJet zone ({distribution})")
+
+    if colorbar:
+        scalar_map = plt.cm.ScalarMappable(norm=norm, cmap=cmap_object)
+        scalar_map.set_array([])
+        colour_bar = figure.colorbar(scalar_map, ax=ax, pad=0.02)
+        colour_bar.set_label(colour_label)
+        if len(plotted) <= 8:
+            ticks = [z_rg[zone] if colour_label.startswith("Zone location") else zone for zone in plotted]
+            colour_bar.set_ticks(ticks)
+    return figure, ax
+
+
+def plot_lepton_distribution_from_jet(jet, *, e_min_keV=1e-9, e_max_keV=1e3,
+                                      n_eval=2, infosw=3, **kwargs):
+    """Evaluate a BHJet model once, then plot its lepton distributions by zone.
+
+    This is a convenience wrapper around :func:`plot_lepton_distribution_per_zone`.
+    The underlying ``numdens`` and jet-profile details remain available on the
+    model as ``_last_numdens`` and ``_last_jet_profile`` after the call.
+    """
+    numdens = jet.get_detail(
+        "numdens", e_min_keV=e_min_keV, e_max_keV=e_max_keV,
+        n_eval=n_eval, infosw=infosw,
+    )
+    return plot_lepton_distribution_per_zone(
+        numdens, jet_profile=getattr(jet, "_last_jet_profile", None), **kwargs
+    )
 
 
 def preprocess_jet_profile(output, include_descriptions=False):

@@ -20,7 +20,11 @@ from plotting import (
     plot_xylike,
     split_plot_data,
 )
-from bhjet_plotting import plot_flux_mjy, plot_nufnu_ergshz
+from bhjet_plotting import (
+    plot_flux_mjy,
+    plot_lepton_distribution_per_zone,
+    plot_nufnu_ergshz,
+)
 
 
 class FakeXYLike:
@@ -88,6 +92,24 @@ class PlottingTests(unittest.TestCase):
         figure, ax = plot_flux_mjy(components, title="Test")
         self.assertIs(figure, ax.figure)
         self.assertEqual(len(ax.lines), 1)
+
+    def test_lepton_distribution_detail_plot_groups_zones_and_renders(self):
+        gamma_one_zone = np.array([1.0, 2.0, 4.0, 8.0])
+        numdens = {
+            "gamma": np.tile(gamma_one_zone, 3),
+            "n_g": np.array([4.0, 2.0, 1.0, 0.5] * 3),
+            "momentum": np.tile(gamma_one_zone * 1e-17, 3),
+            "n_p": np.array([4e17, 2e17, 1e17, 0.5e17] * 3),
+        }
+        profile = {"z_rg": np.array([5.0, 50.0, 500.0])}
+        figure, ax = plot_lepton_distribution_per_zone(
+            numdens, profile, every_nth=2, points_per_zone=4,
+        )
+        self.assertIs(figure, ax.figure)
+        self.assertEqual(len(ax.lines), 2)
+        self.assertEqual(ax.get_xscale(), "log")
+        self.assertEqual(ax.get_yscale(), "log")
+        figure.canvas.draw()
 
     def test_model_component_plotter_evaluates_and_restores_jet_state(self):
         jet = FakeJet()

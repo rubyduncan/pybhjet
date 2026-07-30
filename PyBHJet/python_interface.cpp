@@ -113,6 +113,8 @@ PYBIND11_MODULE(pybhjet, m){
         // Expose generic parameter getter and setter
         .def("get_parameter", &BhJetClass::get_parameter, "Get the value of a parameter by name.")
         .def("set_parameter", &BhJetClass::set_parameter, "Set the value of a parameter by name.")
+        .def("set_parameters", &BhJetClass::set_parameters,
+             "Set the complete ordered BHJet parameter vector.")
         .def("get_parameter_names", &BhJetClass::get_parameter_names, "Get the names of all parameters.")
         // Implement __getitem__ and __setitem__ for dictionary-like access
         .def("__getitem__", &BhJetClass::get_parameter, "Get the value of a parameter by name.")

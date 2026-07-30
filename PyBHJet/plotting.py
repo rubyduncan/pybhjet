@@ -218,14 +218,30 @@ def plot_xylike(plugin, *, ax=None, label=None, color=None, style=DEFAULT_STYLE,
                        color=color, label=label or plugin.name, **kwargs)
 
 
-def plot_xray_file(path, *, ax=None, model_components=None, luminosity=False, y_col=2, yerr_col=3, style=DEFAULT_STYLE, scale_factor=1, **kwargs):
-    """Plot binned X-ray data stored as lower/upper frequency and mJy columns."""
+def plot_xray_file(path, *, ax=None, model_components=None, luminosity=False,
+                   y_col=2, yerr_col=3, value_kind="nuFnu", style=DEFAULT_STYLE,
+                   scale_factor=1, **kwargs):
+    """Plot a binned X-ray SED table.
+
+    The legacy LLAGN tables use lower/upper frequency edges followed by
+    ``nu F_nu`` and its uncertainty, so ``value_kind="nuFnu"`` is the default.
+    Set ``value_kind="flux_density_mjy"`` for a table whose value columns are
+    instead flux densities in mJy.
+    """
     ax = make_sed_axes(ax, style=style, luminosity=luminosity)
     data = np.genfromtxt(Path(path))
     if data.ndim != 2 or data.shape[1] <= max(y_col, yerr_col):
         raise ValueError(f"Expected a 2-D table with columns through {max(y_col, yerr_col)}: {path}")
     frequency = np.sqrt(data[:, 0] * data[:, 1])
-    scale = frequency * MJY_TO_CGS
+    if value_kind == "nuFnu":
+        scale = 1.0
+    elif value_kind == "flux_density_mjy":
+        scale = frequency * MJY_TO_CGS
+    else:
+        raise ValueError(
+            "value_kind must be 'nuFnu' or 'flux_density_mjy', "
+            f"not {value_kind!r}"
+        )
     if luminosity:
         if model_components is None:
             raise ValueError("model_components is required for luminosity plots")
